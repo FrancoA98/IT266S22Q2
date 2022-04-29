@@ -701,6 +701,13 @@ char *single_statusbar =
 "	xv	148 "
 "	pic	11 "
 "endif "
+
+//MOD2: Including space for mp number
+"if 18 "
+"	xv	0 "
+"	yb	-48 "
+"	num	3	18 "
+"endif "
 ;
 
 char *dm_statusbar =

@@ -383,7 +383,7 @@ void G_SetStats (edict_t *ent)
 	//
 	// health
 	//
-	ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
+	ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;//MOD2: OG ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
 	ent->client->ps.stats[STAT_HEALTH] = ent->health;
 
 	//
@@ -520,6 +520,7 @@ void G_SetStats (edict_t *ent)
 		ent->client->ps.stats[STAT_HELPICON] = 0;
 
 	ent->client->ps.stats[STAT_SPECTATOR] = 0;
+	ent->client->ps.stats[STAT_MP] = ent->mp; //MOD2: added this back, needs change in the macro display above this
 }
 
 /*

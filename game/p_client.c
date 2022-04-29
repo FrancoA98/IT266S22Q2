@@ -625,6 +625,9 @@ void InitClientPersistant (gclient_t *client)
 	client->pers.max_grenades	= 50;
 	client->pers.max_cells		= 200;
 	client->pers.max_slugs		= 50;
+	client->pers.max_mp			= 300; //MOD2: added mp maximum value
+	client->pers.mp				= 300; //MOD2: added mp current value
+	
 
 	client->pers.connected = true;
 }
@@ -659,6 +662,8 @@ void SaveClientData (void)
 			continue;
 		game.clients[i].pers.health = ent->health;
 		game.clients[i].pers.max_health = ent->max_health;
+		game.clients[i].pers.mp = ent->mp;						//MOD2: Persistant data for mp
+		game.clients[i].pers.max_mp = ent->max_mp;				//MOD2: Persistant data for max_mp
 		game.clients[i].pers.savedFlags = (ent->flags & (FL_GODMODE|FL_NOTARGET|FL_POWER_ARMOR));
 		if (coop->value)
 			game.clients[i].pers.score = ent->client->resp.score;
@@ -669,6 +674,8 @@ void FetchClientEntData (edict_t *ent)
 {
 	ent->health = ent->client->pers.health;
 	ent->max_health = ent->client->pers.max_health;
+	ent->mp = ent->client->pers.mp;								//MOD2: fetching client mp value
+	ent->max_mp = ent->client->pers.max_mp;						//MOD2: fetsching client max mp value
 	ent->flags |= ent->client->pers.savedFlags;
 	if (coop->value)
 		ent->client->resp.score = ent->client->pers.score;
