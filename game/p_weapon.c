@@ -712,8 +712,11 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 	vec3_t	forward, right;
 	vec3_t	start;
 	int		damage = 120;
-	float	radius;
+	int		kick = 1;
+	//float	radius;
 
+	//Original Code
+	/*
 	radius = damage+40;
 	if (is_quad)
 		damage *= 4;
@@ -738,6 +741,25 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
+
+	*/
+
+	//MOD1 generic code
+	AngleVectors(ent->client->v_angle, forward, right, NULL); //Does: Convert view angle into forward, right, and up vector
+
+	VectorScale(forward, -2, ent->client->kick_origin); //Does: assigs C to B * A
+	ent->client->kick_angles[0] = -2;
+
+	VectorSet(offset, 0, 8, ent->viewheight - 8); //Assign xyz coordinates of vectors in A position
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start); //Does
+
+	//Do the attack
+	fire_hammer(ent, start, forward, damage, kick, 50, MOD_SHOTGUN);
+
+	//Increase frames
+	ent->client->ps.gunframe++;
+
+
 }
 
 void Weapon_GrenadeLauncher (edict_t *ent)
@@ -760,10 +782,13 @@ void Weapon_RocketLauncher_Fire (edict_t *ent)
 {
 	vec3_t	offset, start;
 	vec3_t	forward, right;
-	int		damage;
-	float	damage_radius;
-	int		radius_damage;
+	int		damage = 60;
+	int		kick = 1;
+	//float	damage_radius;
+	//int		radius_damage;
 
+	//Original Code
+	/*
 	damage = 100 + (int)(random() * 20.0);
 	radius_damage = 120;
 	damage_radius = 120;
@@ -794,6 +819,23 @@ void Weapon_RocketLauncher_Fire (edict_t *ent)
 
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
+
+	*/
+
+	//MOD1 Generic Code
+	AngleVectors(ent->client->v_angle, forward, right, NULL); //Does: Convert view angle into forward, right, and up vector
+
+	VectorScale(forward, -2, ent->client->kick_origin); //Does: assigs C to B * A
+	ent->client->kick_angles[0] = -2;
+
+	VectorSet(offset, 0, 8, ent->viewheight - 8); //Assign xyz coordinates of vectors in A position
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start); //Does
+
+	fire_knife(ent, start, forward, damage, kick, 50, MOD_ROCKET);
+
+	ent->client->ps.gunframe++;
+
+
 }
 
 void Weapon_RocketLauncher (edict_t *ent)
@@ -847,19 +889,31 @@ void Blaster_Fire (edict_t *ent, vec3_t g_offset, int damage, qboolean hyper, in
 void Weapon_Blaster_Fire (edict_t *ent)
 {
 	int		damage;
+	vec3_t	start;					//MOD1: start position
+	vec3_t	forward, right;			//MOD1: x and y coordinates
+	vec3_t	offset;					//MOD1: ???
+
 
 	if (deathmatch->value)
-		damage = 15;
+		damage = 35; //MOD1: OG 15
 	else
-		damage = 10;
-	Blaster_Fire (ent, vec3_origin, damage, false, EF_BLASTER);
+		damage = 40; //MOD1: OG 10
+
+	AngleVectors(ent->client->v_angle, forward, right, NULL);						//MOD1: added
+	VectorScale(forward, -2, ent->client->kick_origin);								//MOD1: added
+	ent->client->kick_angles[0] = -2;												//MOD1: added
+	VectorSet(offset, 0, 8, ent->viewheight - 8);									//MOD1: added
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);		//MOD1: added
+
+	//Blaster_Fire (ent, vec3_origin, damage, false, EF_BLASTER);
+	fire_katana(ent, start, forward, damage, 0, 50, MOD_BLASTER);					//MOD1: added
 	ent->client->ps.gunframe++;
 }
 
 void Weapon_Blaster (edict_t *ent)
 {
 	static int	pause_frames[]	= {19, 32, 0};
-	static int	fire_frames[]	= {5, 0};
+	static int	fire_frames[]	= {5, 7, 0}; //MOD1 - Original {5, 7}
 
 	Weapon_Generic (ent, 4, 8, 52, 55, pause_frames, fire_frames, Weapon_Blaster_Fire);
 }
@@ -867,11 +921,16 @@ void Weapon_Blaster (edict_t *ent)
 
 void Weapon_HyperBlaster_Fire (edict_t *ent)
 {
-	float	rotation;
+	//float	rotation;
 	vec3_t	offset;
-	int		effect;
+	//int effect;
 	int		damage;
+	vec3_t	start;					//MOD1: start position
+	vec3_t	forward, right;			//MOD1: x and y coordinates
+	
 
+	//Original hyperblaster code
+	/*
 	ent->client->weapon_sound = gi.soundindex("weapons/hyprbl1a.wav");
 
 	if (!(ent->client->buttons & BUTTON_ATTACK))
@@ -932,6 +991,23 @@ void Weapon_HyperBlaster_Fire (edict_t *ent)
 		ent->client->weapon_sound = 0;
 	}
 
+	*/
+
+	//MOD1 Generic Code
+	if (deathmatch->value)
+		damage = 35; //MOD1: OG 15
+	else
+		damage = 40; //MOD1: OG 10
+
+	AngleVectors(ent->client->v_angle, forward, right, NULL);						//MOD1: added
+	VectorScale(forward, -2, ent->client->kick_origin);								//MOD1: added
+	ent->client->kick_angles[0] = -2;												//MOD1: added
+	VectorSet(offset, 0, 8, ent->viewheight - 8);									//MOD1: added
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);		//MOD1: added
+
+	//Blaster_Fire (ent, vec3_origin, damage, false, EF_BLASTER);
+	fire_spear(ent, start, forward, damage, 0, 50, MOD_BLASTER);					//MOD1: added
+	ent->client->ps.gunframe++;
 }
 
 void Weapon_HyperBlaster (edict_t *ent)
@@ -952,14 +1028,16 @@ MACHINEGUN / CHAINGUN
 
 void Machinegun_Fire (edict_t *ent)
 {
-	int	i;
-	vec3_t		start;
-	vec3_t		forward, right;
-	vec3_t		angles;
-	int			damage = 8;
-	int			kick = 2;
-	vec3_t		offset;
+	//int	i;
+	vec3_t		start;				//MOD1 required
+	vec3_t		forward, right;		//MOD1 required
+	//vec3_t		angles;				//MOD1 required
+	int			damage;				//MOD1 OG defined here to 8
+	//int			kick = 2;
+	vec3_t		offset;				//MOD1 required
 
+	//Original Machinegun Code
+	/*
 	if (!(ent->client->buttons & BUTTON_ATTACK))
 	{
 		ent->client->machinegun_shots = 0;
@@ -1034,6 +1112,23 @@ void Machinegun_Fire (edict_t *ent)
 		ent->s.frame = FRAME_attack1 - (int) (random()+0.25);
 		ent->client->anim_end = FRAME_attack8;
 	}
+	*/
+
+	//MOD1 Generic Code
+	if (deathmatch->value)
+		damage = 35; //MOD1: OG 15
+	else
+		damage = 40; //MOD1: OG 10
+
+	AngleVectors(ent->client->v_angle, forward, right, NULL);						//MOD1: added
+	VectorScale(forward, -2, ent->client->kick_origin);								//MOD1: added
+	ent->client->kick_angles[0] = -2;												//MOD1: added
+	VectorSet(offset, 0, 8, ent->viewheight - 8);									//MOD1: added
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);		//MOD1: added
+
+	//Blaster_Fire (ent, vec3_origin, damage, false, EF_BLASTER);
+	fire_spear(ent, start, forward, damage, 0, 50, MOD_MACHINEGUN);					//MOD1: added
+	ent->client->ps.gunframe++;
 }
 
 void Weapon_Machinegun (edict_t *ent)
@@ -1046,11 +1141,11 @@ void Weapon_Machinegun (edict_t *ent)
 
 void Chaingun_Fire (edict_t *ent)
 {
-	int			i;
-	int			shots;
+	//int			i;
+	//int			shots;
 	vec3_t		start;
-	vec3_t		forward, right, up;
-	float		r, u;
+	vec3_t		forward, right; //Original has also up variable
+	//float		r, u;
 	vec3_t		offset;
 	int			damage;
 	int			kick = 2;
@@ -1059,6 +1154,9 @@ void Chaingun_Fire (edict_t *ent)
 		damage = 6;
 	else
 		damage = 8;
+
+	//Original Code
+	/*
 
 	if (ent->client->ps.gunframe == 5)
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("weapons/chngnu1a.wav"), 1, ATTN_IDLE, 0);
@@ -1161,6 +1259,24 @@ void Chaingun_Fire (edict_t *ent)
 
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index] -= shots;
+
+	*/
+
+	//MOD1 Generic Code
+	AngleVectors(ent->client->v_angle, forward, right, NULL); //Does: Convert view angle into forward, right, and up vector
+
+	VectorScale(forward, -2, ent->client->kick_origin); //Does: assigs C to B * A
+	ent->client->kick_angles[0] = -2;
+
+	VectorSet(offset, 0, 8, ent->viewheight - 8); //Assign xyz coordinates of vectors in A position
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start); //Does
+
+	//Do the attack
+	fire_dagger(ent, start, forward, damage, kick, 50, MOD_CHAINGUN);
+
+	//Increase frames
+	ent->client->ps.gunframe++;
+
 }
 
 
@@ -1186,8 +1302,8 @@ void weapon_shotgun_fire (edict_t *ent)
 	vec3_t		start;
 	vec3_t		forward, right;
 	vec3_t		offset;
-	int			damage = 4;
-	int			kick = 8;
+	int			damage = 100; //MOD1: original 4
+	int			kick = 0; //MOD1: original 8
 
 	if (ent->client->ps.gunframe == 9)
 	{
@@ -1195,13 +1311,13 @@ void weapon_shotgun_fire (edict_t *ent)
 		return;
 	}
 
-	AngleVectors (ent->client->v_angle, forward, right, NULL);
+	AngleVectors (ent->client->v_angle, forward, right, NULL); //Does: Convert view angle into forward, right, and up vector
 
-	VectorScale (forward, -2, ent->client->kick_origin);
+	VectorScale (forward, -2, ent->client->kick_origin); //Does: assigs C to B * A
 	ent->client->kick_angles[0] = -2;
 
-	VectorSet(offset, 0, 8,  ent->viewheight-8);
-	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
+	VectorSet(offset, 0, 8,  ent->viewheight-8); //Assign xyz coordinates of vectors in A position
+	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start); //Does:
 
 	if (is_quad)
 	{
@@ -1209,30 +1325,44 @@ void weapon_shotgun_fire (edict_t *ent)
 		kick *= 4;
 	}
 
-	if (deathmatch->value)
-		fire_shotgun (ent, start, forward, damage, kick, 500, 500, DEFAULT_DEATHMATCH_SHOTGUN_COUNT, MOD_SHOTGUN);
-	else
-		fire_shotgun (ent, start, forward, damage, kick, 500, 500, DEFAULT_SHOTGUN_COUNT, MOD_SHOTGUN);
+	if (deathmatch->value) {
+		fire_sword(ent, start, forward, damage, kick, 50, MOD_SHOTGUN);
+		//fire_shotgun(ent, start, forward, damage, kick, 20, 20, 25, MOD_SHOTGUN); //MOD1: OG fire_shotgun (ent, start, forward, damage, kick, 500, 500, DEFAULT_DEATHMATCH_SHOTGUN_COUNT, MOD_SHOTGUN);
+		//fire_grenade(ent, start, forward, damage, 600, 2.5, 160); //MOD1: Added grenade on fire
+		
+	}
+	else{
+		fire_sword(ent, start, forward, damage, kick, 50, MOD_SHOTGUN);
+		//fire_shotgun (ent, start, forward, damage, kick, 20, 20, 25, MOD_SHOTGUN); //MOD1: OG fire_shotgun (ent, start, forward, damage, kick, 500, 500, DEFAULT_SHOTGUN_COUNT, MOD_SHOTGUN);
+		//fire_grenade(ent, start, forward, damage, 600, 2.5, 160); //MOD1: added grenade on fire
+	}
 
 	// send muzzle flash
+	/*
+	* Related to muzzle flash and the like
 	gi.WriteByte (svc_muzzleflash);
 	gi.WriteShort (ent-g_edicts);
 	gi.WriteByte (MZ_SHOTGUN | is_silenced);
 	gi.multicast (ent->s.origin, MULTICAST_PVS);
+	*/
 
 	ent->client->ps.gunframe++;
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
+	/*
+	* Removed criteria to decrease ammo to make it don't require it
+	
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
+	*/
 }
 
 void Weapon_Shotgun (edict_t *ent)
 {
-	static int	pause_frames[]	= {22, 28, 34, 0};
-	static int	fire_frames[]	= {8, 9, 0};
+	static int	pause_frames[]	= {22, 28, 34, 0}; //Removed some frames to increas fire rate | OG  {22, 28, 34, 0}
+	static int	fire_frames[]	= {8, 9, 0}; //MOD1: Keep original frames
 
-	Weapon_Generic (ent, 7, 18, 36, 39, pause_frames, fire_frames, weapon_shotgun_fire);
+	Weapon_Generic (ent, 7, 12, 36, 39, pause_frames, fire_frames, weapon_shotgun_fire); //OG ent, 7, 18, 36, 39, pause_frames, fire_frames, weapon_shotgun_fire
 }
 
 
@@ -1241,10 +1371,15 @@ void weapon_supershotgun_fire (edict_t *ent)
 	vec3_t		start;
 	vec3_t		forward, right;
 	vec3_t		offset;
-	vec3_t		v;
-	int			damage = 6;
-	int			kick = 12;
+	//vec3_t		v;
+	int			damage = 60;
+	int			kick = 0;//OG 12
 
+	
+	
+
+	//Original code
+	/*
 	AngleVectors (ent->client->v_angle, forward, right, NULL);
 
 	VectorScale (forward, -2, ent->client->kick_origin);
@@ -1279,6 +1414,25 @@ void weapon_supershotgun_fire (edict_t *ent)
 
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index] -= 2;
+
+	*/
+
+	//MOD1 generic code
+	AngleVectors(ent->client->v_angle, forward, right, NULL); //Does: Convert view angle into forward, right, and up vector
+
+	VectorScale(forward, -2, ent->client->kick_origin); //Does: assigs C to B * A
+	ent->client->kick_angles[0] = -2;
+
+	VectorSet(offset, 0, 8, ent->viewheight - 8); //Assign xyz coordinates of vectors in A position
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+
+	//Attack
+	fire_axe(ent, start, forward, damage, kick, 50, MOD_SHOTGUN);
+
+	//Increase frames
+	ent->client->ps.gunframe++;
+	
+
 }
 
 void Weapon_SuperShotgun (edict_t *ent)
@@ -1324,6 +1478,9 @@ void weapon_railgun_fire (edict_t *ent)
 		kick *= 4;
 	}
 
+
+	//Original Code
+	/*
 	AngleVectors (ent->client->v_angle, forward, right, NULL);
 
 	VectorScale (forward, -3, ent->client->kick_origin);
@@ -1344,6 +1501,20 @@ void weapon_railgun_fire (edict_t *ent)
 
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
+	*/
+
+	//MOD1 Generic Code
+	AngleVectors(ent->client->v_angle, forward, right, NULL); //Does: Convert view angle into forward, right, and up vector
+
+	VectorScale(forward, -2, ent->client->kick_origin); //Does: assigs C to B * A
+	ent->client->kick_angles[0] = -2;
+
+	VectorSet(offset, 0, 8, ent->viewheight - 8); //Assign xyz coordinates of vectors in A position
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start); //Does
+
+	fire_bat(ent, start, forward, damage, kick, 50, MOD_RAILGUN);
+
+	ent->client->ps.gunframe++;
 }
 
 
@@ -1369,13 +1540,16 @@ void weapon_bfg_fire (edict_t *ent)
 	vec3_t	offset, start;
 	vec3_t	forward, right;
 	int		damage;
-	float	damage_radius = 1000;
+	int		kick = 1;
+	//float	damage_radius = 1000;
 
 	if (deathmatch->value)
 		damage = 200;
 	else
 		damage = 500;
 
+	//ORIGINAL CODE
+	/*
 	if (ent->client->ps.gunframe == 9)
 	{
 		// send muzzle flash
@@ -1420,6 +1594,21 @@ void weapon_bfg_fire (edict_t *ent)
 
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index] -= 50;
+
+	*/
+
+	//MOD1 GENERIC CODE
+	AngleVectors(ent->client->v_angle, forward, right, NULL); //Does: Convert view angle into forward, right, and up vector
+
+	VectorScale(forward, -2, ent->client->kick_origin); //Does: assigs C to B * A
+	ent->client->kick_angles[0] = -2;
+
+	VectorSet(offset, 0, 8, ent->viewheight - 8); //Assign xyz coordinates of vectors in A position
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start); //Does
+
+	fire_sword(ent, start, forward, damage, kick, 50, MOD_SHOTGUN);
+
+	ent->client->ps.gunframe++;
 }
 
 void Weapon_BFG (edict_t *ent)

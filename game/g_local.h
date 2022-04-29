@@ -725,14 +725,25 @@ qboolean FacingIdeal(edict_t *self);
 //
 void ThrowDebris (edict_t *self, char *modelname, float speed, vec3_t origin);
 qboolean fire_hit (edict_t *self, vec3_t aim, int damage, int kick);
+void fire_melee(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int range, int mod); //MOD1: modified function to provide range
 void fire_bullet (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int mod);
 void fire_shotgun (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int count, int mod);
+void fire_sword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod); //MOD1: function to swing sword
 void fire_blaster (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, int effect, qboolean hyper);
 void fire_grenade (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, float timer, float damage_radius);
 void fire_grenade2 (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, float timer, float damage_radius, qboolean held);
 void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius, int radius_damage);
 void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick);
 void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius);
+void fire_katana(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_axe(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_longsword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_dagger(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_hammer(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_knife(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_spear(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_bat(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_shovel(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
 
 //
 // g_ptrail.c
@@ -851,6 +862,8 @@ typedef struct
 	int			max_grenades;
 	int			max_cells;
 	int			max_slugs;
+	int			max_mp; //MOD2: added max_mp value
+	int			mp;		//MOD2: added mp value
 
 	gitem_t		*weapon;
 	gitem_t		*lastweapon;
@@ -1055,6 +1068,8 @@ struct edict_s
 	int			max_health;
 	int			gib_health;
 	int			deadflag;
+	int			max_mp;//MOD2: Added max_mp to public values
+	int			mp;//MOD2: added mp to public values
 	qboolean	show_hostile;
 
 	float		powerarmor_time;

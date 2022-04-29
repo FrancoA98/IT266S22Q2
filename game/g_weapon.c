@@ -72,7 +72,7 @@ qboolean fire_hit (edict_t *self, vec3_t aim, int damage, int kick)
 	//see if enemy is in range
 	VectorSubtract (self->enemy->s.origin, self->s.origin, dir);
 	range = VectorLength(dir);
-	if (range > aim[0])
+	if (range > aim[0]) //TODO: find out how the range is provided
 		return false;
 
 	if (aim[1] > self->mins[0] && aim[1] < self->maxs[0])
@@ -123,6 +123,76 @@ qboolean fire_hit (edict_t *self, vec3_t aim, int damage, int kick)
 	return true;
 }
 
+/*
+=================
+MOD1: fire_melee
+
+Meant to be used for any weapons as long as a range for melee is provided
+Goal: implement range for calculation | Refer to already existing one
+=================
+*/
+static void fire_melee(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int range, int mod)
+{
+	trace_t		tr;
+	vec3_t		dir;
+	vec3_t		forward, right, up;
+	vec3_t		end;
+	vec3_t		water_start;
+	qboolean	water = false;
+	int			content_mask = MASK_SHOT | MASK_WATER;
+	
+
+	tr = gi.trace(self->s.origin, NULL, NULL, start, self, MASK_SHOT); //MOD1: Traces to detect collision between A and D parameters
+	if (!(tr.fraction < 1.0))
+	{
+		vectoangles(aimdir, dir); //Set dir array to point into the same direction as aimdir
+		AngleVectors(dir, forward, right, up); //Assign forward, right, and up to xyz of dir respectively
+
+		//r = crandom() * hspread; //MOD1: crandom height
+		//u = crandom() * vspread; //MOD1: crandom 
+		VectorMA(start, range, forward, end); //Sets starts + 8192 * forward into end | 8192 second argument
+		//VectorMA(end, r, right, end); //Sets: end + r * right into end
+		//VectorMA(end, u, up, end); //Sets: end + u * up into end
+
+		if (gi.pointcontents(start) & MASK_WATER)
+		{
+			water = true;
+			VectorCopy(start, water_start);
+			content_mask &= ~MASK_WATER;
+		}
+
+		tr = gi.trace(start, NULL, NULL, end, self, content_mask);
+
+		
+	}
+
+	// send gun puff / flash
+	if (!((tr.surface) && (tr.surface->flags & SURF_SKY)))
+	{
+		if (tr.fraction < 1.0)
+		{
+			if (tr.ent->takedamage)
+			{
+				T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET, mod);
+			}
+			else
+			{
+				if (strncmp(tr.surface->name, "sky", 3) != 0)
+				{
+					gi.WriteByte(svc_temp_entity);
+					gi.WriteByte(te_impact);
+					gi.WritePosition(tr.endpos);
+					gi.WriteDir(tr.plane.normal);
+					gi.multicast(tr.endpos, MULTICAST_PVS);
+
+					if (self->client)
+						PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
+				}
+			}
+		}
+	}
+
+}
 
 /*
 =================
@@ -143,17 +213,17 @@ static void fire_lead (edict_t *self, vec3_t start, vec3_t aimdir, int damage, i
 	qboolean	water = false;
 	int			content_mask = MASK_SHOT | MASK_WATER;
 
-	tr = gi.trace (self->s.origin, NULL, NULL, start, self, MASK_SHOT);
+	tr = gi.trace (self->s.origin, NULL, NULL, start, self, MASK_SHOT); //MOD1: Traces to detect collision between A and D parameters
 	if (!(tr.fraction < 1.0))
 	{
-		vectoangles (aimdir, dir);
-		AngleVectors (dir, forward, right, up);
+		vectoangles (aimdir, dir); //Set dir array to point into the same direction as aimdir
+		AngleVectors (dir, forward, right, up); //Assign forward, right, and up to xyz of dir respectively
 
-		r = crandom()*hspread;
-		u = crandom()*vspread;
-		VectorMA (start, 8192, forward, end);
-		VectorMA (end, r, right, end);
-		VectorMA (end, u, up, end);
+		r = crandom()*hspread; //MOD1: crandom height
+		u = crandom()*vspread; //MOD1: crandom 
+		VectorMA (start, 8192, forward, end); //Sets starts + 8192 * forward into end | 8192 second argument
+		VectorMA (end, r, right, end); //Sets: end + r * right into end
+		VectorMA (end, u, up, end); //Sets: end + u * up into end
 
 		if (gi.pointcontents (start) & MASK_WATER)
 		{
@@ -280,6 +350,7 @@ void fire_bullet (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int ki
 }
 
 
+
 /*
 =================
 fire_shotgun
@@ -293,6 +364,18 @@ void fire_shotgun (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int k
 
 	for (i = 0; i < count; i++)
 		fire_lead (self, start, aimdir, damage, kick, TE_SHOTGUN, hspread, vspread, mod);
+}
+
+/*
+=================
+MOD1: fire_sword
+
+Swings sword. Mean for shotgun mod replacement
+=================
+*/
+void fire_sword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
 }
 
 
@@ -359,7 +442,7 @@ void fire_blaster (edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	VectorCopy (start, bolt->s.origin);
 	VectorCopy (start, bolt->s.old_origin);
 	vectoangles (dir, bolt->s.angles);
-	VectorScale (dir, speed, bolt->velocity);
+	VectorScale (dir, 1000, bolt->velocity); //MOD1: OG VectorScale (dir, speed, bolt->velocity);
 	bolt->movetype = MOVETYPE_FLYMISSILE;
 	bolt->clipmask = MASK_SHOT;
 	bolt->solid = SOLID_BBOX;
@@ -379,7 +462,7 @@ void fire_blaster (edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	gi.linkentity (bolt);
 
 	if (self->client)
-		check_dodge (self, bolt->s.origin, dir, speed);
+		check_dodge (self, bolt->s.origin, dir, 1000); //MOD1: original check_dodge (self, bolt->s.origin, dir, speed);
 
 	tr = gi.trace (self->s.origin, NULL, NULL, bolt->s.origin, bolt, MASK_SHOT);
 	if (tr.fraction < 1.0)
@@ -913,4 +996,112 @@ void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, f
 		check_dodge (self, bfg->s.origin, dir, speed);
 
 	gi.linkentity (bfg);
+}
+
+/*
+=================
+MOD1: fire_katana
+
+Swings katana. Meant for blaster replacement
+=================
+*/
+void fire_katana(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_axe
+
+Swings sword. Meant for shotgun mod replacement
+=================
+*/
+void fire_axe(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_longsword
+
+Swings longsword. Meant for supershotgun
+=================
+*/
+void fire_longsword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_dagger
+
+Swings dagger. Meant for chaingun
+=================
+*/
+void fire_dagger(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_hammer
+
+Swings hammer. Meant for grenade launcher
+=================
+*/
+void fire_hammer(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_knife
+
+Swings sword. Meant for rockets
+=================
+*/
+void fire_knife(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_spear
+
+Swings spear. Meant for hyperblaster
+=================
+*/
+void fire_spear(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_bat
+
+Swings bat. Meant for railgun
+=================
+*/
+void fire_bat(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_shovel
+
+Swings shovel, meant for portal gun
+=================
+*/
+void fire_shovel(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
 }
