@@ -20,6 +20,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "g_local.h"
 #include "m_player.h"
 
+/*
+==================
+MOD2
+P_ProjectSource
+
+Added to help with firing projectiles as spells
+
+==================
+*/
+static void P_ProjectSource(gclient_t* client, vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result)
+{
+	vec3_t	_distance;
+
+	VectorCopy(distance, _distance);
+	if (client->pers.hand == LEFT_HANDED)
+		_distance[1] *= -1;
+	else if (client->pers.hand == CENTER_HANDED)
+		_distance[1] = 0;
+	G_ProjectSource(point, _distance, forward, right, result);
+}
 
 char *ClientTeam (edict_t *ent)
 {
@@ -869,6 +889,142 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 	}
 }
 
+/*
+==================
+MOD2
+Cmd_Spell_Fire_f
+
+Casts fire ball
+
+argv(0) fire
+==================
+*/
+void Cmd_Spell_Fire_f(edict_t* ent)
+{
+	vec3_t	offset, start;
+	vec3_t	forward, right;
+	int		damage = 120;
+	float	damage_radius = 120;
+	int		radius_damage = 120;
+
+	AngleVectors(ent->client->v_angle, forward, right, NULL);
+
+	VectorScale(forward, -2, ent->client->kick_origin);
+	ent->client->kick_angles[0] = -1;
+
+	VectorSet(offset, 8, 8, ent->viewheight - 8);
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+	fire_rocket(ent, start, forward, damage, 650, damage_radius, radius_damage);
+
+	gi.cprintf(ent, PRINT_HIGH, "Fire Casted\n");
+	
+}
+
+/*
+==================
+MOD2
+Cmd_Spell_Void_f
+
+Casts void
+
+argv(0) void
+==================
+*/
+void Cmd_Spell_Void_f(edict_t* ent)
+{
+	
+	vec3_t	offset, start;
+	vec3_t	forward, right;
+	int		damage = 200;
+	float	damage_radius = 500;
+	
+	AngleVectors(ent->client->v_angle, forward, right, NULL);
+	VectorScale(forward, -2, ent->client->kick_origin);
+	VectorSet(offset, 8, 8, ent->viewheight - 8);
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+	fire_bfg(ent, start, forward, damage, 500, damage_radius);
+	
+	gi.cprintf(ent, PRINT_HIGH, "Void Casted\n");
+}
+
+/*
+==================
+MOD2
+Cmd_Spell_Aero_f
+
+Casts Air Cutter
+
+argv(0) air
+==================
+*/
+void Cmd_Spell_Aero_f(edict_t* ent)
+{
+
+	vec3_t		start;
+	vec3_t		forward, right;
+	vec3_t		offset;
+	int			damage = 200;
+	int			kick = 1;
+
+	AngleVectors(ent->client->v_angle, forward, right, NULL);
+
+	VectorScale(forward, -3, ent->client->kick_origin);
+	ent->client->kick_angles[0] = -3;
+
+	VectorSet(offset, 0, 7, ent->viewheight - 8);
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+	fire_rail(ent, start, forward, damage, kick);
+
+	gi.cprintf(ent, PRINT_HIGH, "Air Cutter Casted\n");
+}
+
+/*
+==================
+MOD2
+Cmd_Spell_Blaze_f
+
+Casts Blaze. Sets enemies on fire
+
+argv(0) blaze
+==================
+*/
+void Cmd_Spell_Blaze_f(edict_t* ent)
+{
+	//
+	//PLAYER
+	//
+	vec3_t		start, forward;
+	vec3_t		end;
+	trace_t		tr;
+
+	//ENEMY
+	vec3_t		m_start, m_vec;
+	vec3_t		m_forward, m_right;
+	vec3_t		dir;
+
+	VectorCopy(ent->s.origin, start); //First make a copy of vector
+	start[2] += ent->viewheight; //Adds ent->viewheight to z value of start | meant to align to viewheight of player for hitscan
+	AngleVectors(ent->client->v_angle, forward, NULL, NULL); //Assignning respective x value of vector into forward
+	VectorMA(start, 8192, forward, end); //setting end to start + 8192 * forward
+	tr = gi.trace(start, NULL, NULL, end, ent, MASK_SHOT); //Tracing into entity from start to end
+	if (tr.ent && ((tr.ent->svflags & SVF_MONSTER) || tr.ent->client))
+	{
+		AngleVectors(tr.ent->s.angles, m_forward, m_right, NULL);
+		G_ProjectSource(tr.ent->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_1], m_forward, m_right, m_start);
+		VectorCopy(tr.ent->s.origin, m_vec);
+		m_vec[2] += ent->viewheight;
+		VectorSubtract(m_vec, m_start, dir);
+		VectorNormalize(dir);
+		//m_start[0] += 7;
+		
+		//monster_fire_rocket(tr.ent, m_start, dir, 200, 10, MZ2_BOSS2_ROCKET_1);
+		fire_rocket(ent, m_start, dir, 200, 500, 200, 200);
+		
+	}
+
+	gi.cprintf(ent, PRINT_HIGH, "Blaze Casted\n");
+}
+
 void Cmd_PlayerList_f(edict_t *ent)
 {
 	int i;
@@ -985,6 +1141,14 @@ void ClientCommand (edict_t *ent)
 		Cmd_PutAway_f (ent);
 	else if (Q_stricmp (cmd, "wave") == 0)
 		Cmd_Wave_f (ent);
+	else if (Q_stricmp (cmd, "fire") == 0)	//MOD2: Spell Fire command
+		Cmd_Spell_Fire_f (ent);
+	else if (Q_stricmp(cmd, "void") == 0)	//MOD2: Spell Void command
+		Cmd_Spell_Void_f (ent);
+	else if (Q_stricmp(cmd, "aero") == 0)	//MOD2: Spell Aero command
+		Cmd_Spell_Aero_f(ent);
+	else if (Q_stricmp(cmd, "blaze") == 0)	//MOD2: Spell Blaze command
+		Cmd_Spell_Blaze_f(ent);
 	else if (Q_stricmp(cmd, "playerlist") == 0)
 		Cmd_PlayerList_f(ent);
 	else	// anything that doesn't match a command will be a chat
