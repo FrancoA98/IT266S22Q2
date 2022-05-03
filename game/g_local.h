@@ -862,8 +862,6 @@ typedef struct
 	int			max_grenades;
 	int			max_cells;
 	int			max_slugs;
-	int			max_mp; //MOD2: added max_mp value
-	int			mp;		//MOD2: added mp value
 
 	gitem_t		*weapon;
 	gitem_t		*lastweapon;
@@ -875,6 +873,10 @@ typedef struct
 	int			helpchanged;
 
 	qboolean	spectator;			// client is a spectator
+
+	int			max_mp; //MOD2: added max_mp value
+	int			mp;		//MOD2: added mp value
+	int			mp_regen;
 } client_persistant_t;
 
 // client data that stays across deathmatch respawns
@@ -1068,8 +1070,6 @@ struct edict_s
 	int			max_health;
 	int			gib_health;
 	int			deadflag;
-	int			max_mp;//MOD2: Added max_mp to public values
-	int			mp;//MOD2: added mp to public values
 	qboolean	show_hostile;
 
 	float		powerarmor_time;
@@ -1124,5 +1124,9 @@ struct edict_s
 	// common data blocks
 	moveinfo_t		moveinfo;
 	monsterinfo_t	monsterinfo;
+
+	int			max_mp;//MOD2: Added max_mp to public values
+	int			mp;//MOD2: added mp to public values
+	int			mp_regen;
 };
 

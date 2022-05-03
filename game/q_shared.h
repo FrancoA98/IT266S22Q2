@@ -1009,6 +1009,7 @@ typedef enum
 #define STAT_CHASE				16
 #define STAT_SPECTATOR			17
 #define STAT_MP					18		//MOD2: added mp stat for display
+#define STAT_MP_ICON			19
 
 #define	MAX_STATS				32
 

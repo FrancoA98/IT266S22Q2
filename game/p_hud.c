@@ -398,6 +398,7 @@ void G_SetStats (edict_t *ent)
 	{
 		item = &itemlist[ent->client->ammo_index];
 		ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex (item->icon);
+		//gi.cprintf(ent, PRINT_HIGH, item->icon); //MOD2: test
 		ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->ammo_index];
 	}
 	
@@ -479,6 +480,7 @@ void G_SetStats (edict_t *ent)
 		ent->client->ps.stats[STAT_SELECTED_ICON] = 0;
 	else
 		ent->client->ps.stats[STAT_SELECTED_ICON] = gi.imageindex (itemlist[ent->client->pers.selected_item].icon);
+		//gi.cprintf(ent, PRINT_HIGH, itemlist[ent->client->pers.selected_item].icon); //MOD2: test
 
 	ent->client->ps.stats[STAT_SELECTED_ITEM] = ent->client->pers.selected_item;
 
@@ -520,7 +522,8 @@ void G_SetStats (edict_t *ent)
 		ent->client->ps.stats[STAT_HELPICON] = 0;
 
 	ent->client->ps.stats[STAT_SPECTATOR] = 0;
-	ent->client->ps.stats[STAT_MP] = ent->mp; //MOD2: added this back, needs change in the macro display above this
+	ent->client->ps.stats[STAT_MP] = ent->client->pers.mp; //MOD2: added this back, needs change in the macro display above this
+	ent->client->ps.stats[STAT_MP_ICON] = gi.imageindex("a_slugs"); //MOD: icon image for MP
 }
 
 /*

@@ -704,9 +704,12 @@ char *single_statusbar =
 
 //MOD2: Including space for mp number
 "if 18 "
-"	xv	0 "
-"	yb	-48 "
+"	xv	-150 "
+"	yb	-24 "
 "	num	3	18 "
+"	xv	-100 "
+"	yb	-24 "
+"	pic	19 "
 "endif "
 ;
 
