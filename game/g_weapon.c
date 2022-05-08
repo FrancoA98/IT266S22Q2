@@ -653,6 +653,7 @@ void rocket_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *su
 {
 	vec3_t		origin;
 	int			n;
+	int			weapon_dmg;
 
 	if (other == ent->owner)
 		return;
@@ -668,10 +669,17 @@ void rocket_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *su
 
 	// calculate position for the explosion entity
 	VectorMA (ent->s.origin, -0.02, ent->velocity, origin);
+	weapon_dmg = ent->dmg; //MOD4: copying entity damage
 
 	if (other->takedamage)
 	{
-		T_Damage (other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, 0, MOD_ROCKET);
+		if (other->element != NULL && ent->element != NULL) {
+			C_ElementDamage_Mod(ent, other, &weapon_dmg);
+			gi.cprintf(ent->owner, PRINT_HIGH, "%s damage dealt: %d\n", ent->element, weapon_dmg);
+		}
+
+		T_Damage (other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, weapon_dmg, 0, 0, MOD_ROCKET);
+		
 	}
 	else
 	{
@@ -717,6 +725,7 @@ void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 	VectorClear (rocket->maxs);
 	rocket->s.modelindex = gi.modelindex ("models/objects/rocket/tris.md2");
 	rocket->owner = self;
+	rocket->element = "fire";
 	rocket->touch = rocket_touch;
 	rocket->nextthink = level.time + 8000/speed;
 	rocket->think = G_FreeEdict;
@@ -730,6 +739,39 @@ void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 		check_dodge (self, rocket->s.origin, dir, speed);
 
 	gi.linkentity (rocket);
+}
+
+void fire_rocket_dark (edict_t* self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)
+{
+	edict_t* rocket;
+
+	rocket = G_Spawn();
+	VectorCopy(start, rocket->s.origin);
+	VectorCopy(dir, rocket->movedir);
+	vectoangles(dir, rocket->s.angles);
+	VectorScale(dir, speed, rocket->velocity);
+	rocket->movetype = MOVETYPE_FLYMISSILE;
+	rocket->clipmask = MASK_SHOT;
+	rocket->solid = SOLID_BBOX;
+	rocket->s.effects |= EF_ROCKET;
+	VectorClear(rocket->mins);
+	VectorClear(rocket->maxs);
+	rocket->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
+	rocket->owner = self;
+	rocket->element = "dark";
+	rocket->touch = rocket_touch;
+	rocket->nextthink = level.time + 8000 / speed;
+	rocket->think = G_FreeEdict;
+	rocket->dmg = damage;
+	rocket->radius_dmg = radius_damage;
+	rocket->dmg_radius = damage_radius;
+	rocket->s.sound = gi.soundindex("weapons/rockfly.wav");
+	rocket->classname = "rocket";
+
+	if (self->client)
+		check_dodge(self, rocket->s.origin, dir, speed);
+
+	gi.linkentity(rocket);
 }
 
 
@@ -746,6 +788,8 @@ void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick
 	edict_t		*ignore;
 	int			mask;
 	qboolean	water;
+	char		*spell_element = "aero";
+	int			dmg = damage;
 
 	VectorMA (start, 8192, aimdir, end);
 	VectorCopy (start, from);
@@ -769,7 +813,16 @@ void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick
 				ignore = NULL;
 
 			if ((tr.ent != self) && (tr.ent->takedamage))
-				T_Damage (tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, 0, MOD_RAILGUN);
+			{
+				if (tr.ent->element != NULL) {
+					C_ElementDamage_NoEnt_Mod(spell_element, tr.ent, &dmg);
+					gi.cprintf(self, PRINT_HIGH, "Dealing %d %s damage\n", dmg, spell_element);
+				}
+				T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, dmg, kick, 0, MOD_RAILGUN); //MOD4: original used damage directly
+			}
+				
+				
+				
 		}
 
 		VectorCopy (tr.endpos, from);
@@ -807,6 +860,7 @@ void bfg_explode (edict_t *self)
 	float	points;
 	vec3_t	v;
 	float	dist;
+	int		i_points; //MOD4: added for elemental damage calculation
 
 	if (self->s.frame == 0)
 	{
@@ -835,7 +889,12 @@ void bfg_explode (edict_t *self)
 			gi.WriteByte (TE_BFG_EXPLOSION);
 			gi.WritePosition (ent->s.origin);
 			gi.multicast (ent->s.origin, MULTICAST_PHS);
-			T_Damage (ent, self, self->owner, self->velocity, ent->s.origin, vec3_origin, (int)points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT);
+			i_points = (int)points;
+			if (ent->element != NULL && self->element != NULL) {
+				C_ElementDamage_Mod(self, ent, &i_points); //Modify damage according to elements
+				gi.cprintf(self->owner, PRINT_HIGH, "Dealing %d %s damage\n", i_points, self->element);
+			}
+			T_Damage (ent, self, self->owner, self->velocity, ent->s.origin, vec3_origin, i_points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT); //Original used int points casted
 		}
 	}
 
@@ -847,6 +906,7 @@ void bfg_explode (edict_t *self)
 
 void bfg_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
+	int damage = 200;
 	if (other == self->owner)
 		return;
 
@@ -859,10 +919,21 @@ void bfg_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf
 	if (self->owner->client)
 		PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
 
+	
+
 	// core explosion - prevents firing it into the wall/floor
 	if (other->takedamage)
-		T_Damage (other, self, self->owner, self->velocity, self->s.origin, plane->normal, 200, 0, 0, MOD_BFG_BLAST);
-	T_RadiusDamage(self, self->owner, 200, other, 100, MOD_BFG_BLAST);
+	{
+		//MOD4: Modifying damage according to elements, not trusting pointer
+		if (other->element != NULL) {
+			C_ElementDamage_Mod(self, other, &damage);
+			gi.cprintf(self->owner, PRINT_HIGH, "Dealing %d %s damage\n", damage, self->element);
+		}
+		//MOD4: Applying modified damage
+		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, damage, 0, 0, MOD_BFG_BLAST);
+	}
+		
+	T_RadiusDamage(self, self->owner, damage, other, 100, MOD_BFG_BLAST); //Changed hard coded damag into modified value
 
 	gi.sound (self, CHAN_VOICE, gi.soundindex ("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
 	self->solid = SOLID_NOT;
@@ -930,9 +1001,19 @@ void bfg_think (edict_t *self)
 			if (!tr.ent)
 				break;
 
+
 			// hurt it if we can
 			if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->owner))
-				T_Damage (tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
+			{
+				if (tr.ent->element != NULL) {
+					C_ElementDamage_Mod(self, tr.ent, &dmg);
+					gi.cprintf(self->owner, PRINT_HIGH, "Dealing %d %s damage\n", dmg, self->element);
+				}
+				//MOD4: Element resistance and weakness damage calculation
+				T_Damage(tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
+
+			}
+				
 
 			// if we hit something that's not a monster or player we're done
 			if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client))
@@ -979,6 +1060,7 @@ void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, f
 	VectorClear (bfg->maxs);
 	bfg->s.modelindex = gi.modelindex ("sprites/s_bfg1.sp2");
 	bfg->owner = self;
+	bfg->element = "void"; //MOD4: added attribute for void spell
 	bfg->touch = bfg_touch;
 	bfg->nextthink = level.time + 8000/speed;
 	bfg->think = G_FreeEdict;

@@ -1256,6 +1256,30 @@ void SP_monster_soldier_light (edict_t *self)
 	self->gib_health = -30;
 }
 
+//MOD4: EXTERNED SPAWN FUNCTION FOR DEMO
+extern void SP_monster_soldier_light_2(edict_t* self)
+{
+	if (deathmatch->value)
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	SP_monster_soldier_x(self);
+
+	sound_pain_light = gi.soundindex("soldier/solpain2.wav");
+	sound_death_light = gi.soundindex("soldier/soldeth2.wav");
+	gi.modelindex("models/objects/laser/tris.md2");
+	gi.soundindex("misc/lasfly.wav");
+	gi.soundindex("soldier/solatck2.wav");
+
+	self->s.skinnum = 0;
+	self->health = 200;
+	self->gib_health = -30;
+	self->classname = "soldierboy"; //MOD4: For demo purposes
+	self->element = "fire"; //MOD4: soldier element fire
+}
+
 /*QUAKED monster_soldier (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
 */
 void SP_monster_soldier (edict_t *self)

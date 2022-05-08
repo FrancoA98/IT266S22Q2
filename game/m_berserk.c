@@ -455,3 +455,51 @@ void SP_monster_berserk (edict_t *self)
 
 	walkmonster_start (self);
 }
+
+extern void SP_monster_berserk_2(edict_t* self)
+{
+	if (deathmatch->value)
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	// pre-caches
+	sound_pain = gi.soundindex("berserk/berpain2.wav");
+	sound_die = gi.soundindex("berserk/berdeth2.wav");
+	sound_idle = gi.soundindex("berserk/beridle1.wav");
+	sound_punch = gi.soundindex("berserk/attack.wav");
+	sound_search = gi.soundindex("berserk/bersrch1.wav");
+	sound_sight = gi.soundindex("berserk/sight.wav");
+
+	self->s.modelindex = gi.modelindex("models/monsters/berserk/tris.md2");
+	VectorSet(self->mins, -16, -16, -24);
+	VectorSet(self->maxs, 16, 16, 32);
+	self->movetype = MOVETYPE_STEP;
+	self->solid = SOLID_BBOX;
+
+	self->health = 240;
+	self->gib_health = -60;
+	self->mass = 250;
+
+	self->pain = berserk_pain;
+	self->die = berserk_die;
+
+	self->monsterinfo.stand = berserk_stand;
+	self->monsterinfo.walk = berserk_walk;
+	self->monsterinfo.run = berserk_run;
+	self->monsterinfo.dodge = NULL;
+	self->monsterinfo.attack = NULL;
+	self->monsterinfo.melee = berserk_melee;
+	self->monsterinfo.sight = berserk_sight;
+	self->monsterinfo.search = berserk_search;
+
+	self->monsterinfo.currentmove = &berserk_move_stand;
+	self->monsterinfo.scale = MODEL_SCALE;
+
+	self->element = "aero"; //MOD4: berserk element aero
+
+	gi.linkentity(self);
+
+	walkmonster_start(self);
+}
