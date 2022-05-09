@@ -397,9 +397,9 @@ void G_SetStats (edict_t *ent)
 	else
 	{
 		item = &itemlist[ent->client->ammo_index];
-		ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex (item->icon);
+		ent->client->ps.stats[STAT_AMMO_ICON] = 0; //MOD5: Original equal to: gi.imageindex (item->icon);
 		//gi.cprintf(ent, PRINT_HIGH, item->icon); //MOD2: test
-		ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->ammo_index];
+		ent->client->ps.stats[STAT_AMMO] = 0;//MOD5: Original equal to: ent->client->pers.inventory[ent->client->ammo_index];
 	}
 	
 	//

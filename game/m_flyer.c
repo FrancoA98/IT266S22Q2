@@ -563,8 +563,31 @@ void flyer_pain (edict_t *self, edict_t *other, float kick, int damage)
 
 void flyer_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
+	//
+	//MOD5 Variables
+	//
+	int		i_rand;
+	char* sp_names[] = { "Body Armor", "Combat Armor", "Jacket Armor", "Armor Shard", "Quad Damage", "Invulnerability", "Rebreather" };
+	gitem_t* it;
+	edict_t* it_ent;
+	vec3_t	death_spot;
+
+	VectorCopy(self->s.origin, death_spot);
 	gi.sound (self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
 	BecomeExplosion1(self);
+	i_rand = rand() % 7; //Get a random number between max length of sp_names
+	it = FindItem(sp_names[i_rand]);
+	if (!it)
+	{
+		return;
+	}
+	else
+	{
+		it_ent = G_Spawn();
+		it_ent->classname = it->classname; //Assign respective classname
+		VectorCopy(death_spot, it_ent->s.origin); //Locate the item at point of origin of entity
+		SpawnItem(it_ent, it); //Spawns the item
+	}
 }
 	
 

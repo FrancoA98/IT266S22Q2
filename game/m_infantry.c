@@ -386,6 +386,14 @@ mmove_t infantry_move_death3 = {FRAME_death301, FRAME_death309, infantry_frames_
 void infantry_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int		n;
+	//
+	//MOD5 Variables
+	//
+	int		i_rand;
+	char* sp_names[] = { "Body Armor", "Combat Armor", "Jacket Armor", "Armor Shard", "Quad Damage", "Invulnerability", "Rebreather" };
+	gitem_t* it;
+	edict_t* it_ent;
+	vec3_t	death_spot;
 
 // check for gib
 	if (self->health <= self->gib_health)
@@ -396,7 +404,21 @@ void infantry_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 		for (n= 0; n < 4; n++)
 			ThrowGib (self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
 		ThrowHead (self, "models/objects/gibs/head2/tris.md2", damage, GIB_ORGANIC);
+		VectorCopy(self->s.origin, death_spot);
 		self->deadflag = DEAD_DEAD;
+		i_rand = rand() % 7; //Get a random number between max length of sp_names
+		it = FindItem(sp_names[i_rand]);
+		if (!it)
+		{
+			return;
+		}
+		else
+		{
+			it_ent = G_Spawn();
+			it_ent->classname = it->classname; //Assign respective classname
+			VectorCopy(death_spot, it_ent->s.origin); //Locate the item at point of origin of entity
+			SpawnItem(it_ent, it); //Spawns the item
+		}
 		return;
 	}
 
