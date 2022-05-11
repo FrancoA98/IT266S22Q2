@@ -26,4 +26,42 @@ Thanks to Robert Duffy for doing the grunt work of building this release.
 John Carmack
 Id Software
 
+# MELEE AND MAGIC IN QUAKE 2
+Mod includes an implementation of simulation of melee weapons and spells to combat enemies.
+Certain enemies have weaknesses and resistances to spell according to their element.
 
+# How to INSTALL
+Assuming you already own Quake 2 on Steam and that you have a GitHub account
+1) Create a new repository and clone this one
+2) Pull the contents to your machine
+3) Look in Program Files and search for the folder Steam. Look for where Quake 2 is installed.
+   Steam->steamapps->common->Quake 2
+4) Create a folder (choose a name)
+5) Enter the pulled repo and follow game->release->gamex86.dll
+6) Copy gamex86.dll into your folder from step 4
+7) Create a shortcut of quake2.exe. Enter the properties of the shortcut
+   and modify Target and add (after the exe") +set game FolderNameFromStep4
+8) Run the game using the shortcut. And then quit.
+9) Go to your folder, find the config file and edit it with NotePad
+10) Find the respective keybinds and change:
+    bind c "fire"
+    bind v "void"
+    bind b "aero"
+    bind n "blaze"
+    
+# How to PLAY and TEST
+Go around and kill a few enemies. They should drop equipment. However, they do not have resistances.
+I have included the console command spawn that spawns mosnters in front of where the player is looking. 
+The working versions are:
+    1) spawn soldier
+    2) spawn berserk
+    3) spawn gunner
+    3) spawn infantry
+    4) spawn flyer
+These monsters include the changes for resistances. Spawn a few and test their resistance of weakness to a spell.
+A message should display everytime a monster is spawned telling you the HP and Element of the monster.
+Attack the monster with a spell and check the resistances and weaknesses on the messages displayed
+The weapons and spells are very overpowered, mostly to showcase a change.
+You might want to use the following command for playing and testing:
+    1) god (makes you invincible)
+    2) give all (give you everything included all weapons)
