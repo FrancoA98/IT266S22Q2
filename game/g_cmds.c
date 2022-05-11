@@ -514,6 +514,7 @@ void Cmd_Inven_f (edict_t *ent)
 	gi.unicast (ent, true);
 }
 
+
 /*
 =================
 Cmd_InvUse_f
@@ -1284,7 +1285,7 @@ void ClientCommand (edict_t *ent)
 	}
 	if (Q_stricmp (cmd, "help") == 0)
 	{
-		Cmd_Help_f (ent);
+		Cmd_Help_f (ent); //MOD Common: show help menu
 		return;
 	}
 
@@ -1304,7 +1305,7 @@ void ClientCommand (edict_t *ent)
 	else if (Q_stricmp (cmd, "noclip") == 0)
 		Cmd_Noclip_f (ent);
 	else if (Q_stricmp (cmd, "inven") == 0)
-		Cmd_Inven_f (ent);
+		Cmd_Inven_f (ent); //OG: Cmd_Inven_f
 	else if (Q_stricmp (cmd, "invnext") == 0)
 		SelectNextItem (ent, -1);
 	else if (Q_stricmp (cmd, "invprev") == 0)

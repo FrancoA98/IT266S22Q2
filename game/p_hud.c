@@ -315,7 +315,7 @@ void HelpComputer (edict_t *ent)
 
 	// send the layout
 	Com_sprintf (string, sizeof(string),
-		"xv 32 yv 8 picn help "			// background
+		"xv 32 yv 8 picn inventory "			// background common modC
 		"xv 202 yv 12 string2 \"%s\" "		// skill
 		"xv 0 yv 24 cstring2 \"%s\" "		// level name
 		"xv 0 yv 54 cstring2 \"%s\" "		// help 1
@@ -335,6 +335,37 @@ void HelpComputer (edict_t *ent)
 	gi.unicast (ent, true);
 }
 
+/*
+==================
+HelpComputer
+
+Draw help computer. Modded Version
+==================
+*/
+void HelpComputerAlt(edict_t* ent)
+{
+	char	string[1024];
+
+	// send the layout
+	Com_sprintf(string, sizeof(string),
+		"xv 32 yv 8 picn inventory "			// background common modC
+		"xv 107 yv 24 string2 \"HOW TO PLAY\" "		
+		"xv 50 yv 34 string2 \"Go and kill a few monsters.\" "
+		"xv 50 yv 44 string2 \"Use Spells to attack them.\" "
+		"xv 98 yv 74 string2 \"MELEE ATTACKS\" "
+		"xv 50 yv 84 string2 \"LCLICK to attack.\" "
+		"xv 125 yv 110 string2 \"SPELLS\" "		
+		"xv 50 yv 120 string2 \"Fire -> C\" "
+		"xv 50 yv 130 string2 \"Void -> V\" "
+		"xv 50 yv 140 string2 \"Aero -> B\" "
+		"xv 50 yv 150 string2 \"Dark -> N\" "
+		"xv 50 yv 160 string2 \"Light -> M\" "
+		);
+
+	gi.WriteByte(svc_layout);
+	gi.WriteString(string);
+	gi.unicast(ent, true);
+}
 
 /*
 ==================
@@ -357,13 +388,14 @@ void Cmd_Help_f (edict_t *ent)
 
 	if (ent->client->showhelp && (ent->client->pers.game_helpchanged == game.helpchanged))
 	{
+		//ent->client->showhelp = false;
 		ent->client->showhelp = false;
 		return;
 	}
 
 	ent->client->showhelp = true;
 	ent->client->pers.helpchanged = 0;
-	HelpComputer (ent);
+	HelpComputerAlt (ent); //Common Deliverable: display help message
 }
 
 
