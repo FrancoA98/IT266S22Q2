@@ -359,7 +359,7 @@ void HelpComputerAlt(edict_t* ent)
 		"xv 50 yv 130 string2 \"Void -> V\" "
 		"xv 50 yv 140 string2 \"Aero -> B\" "
 		"xv 50 yv 150 string2 \"Dark -> N\" "
-		"xv 50 yv 160 string2 \"Light -> M\" "
+		"xv 50 yv 160 string2 \"Light->RCLICK aimed at Mons\" "
 		);
 
 	gi.WriteByte(svc_layout);
