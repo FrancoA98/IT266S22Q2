@@ -43,7 +43,7 @@ Assuming you already own Quake 2 on Steam and that you have a GitHub account
    and modify Target and add (after the exe") +set game FolderNameFromStep4
 8) Run the game using the shortcut. And then quit.
 9) Go to your folder, find the config file and edit it with NotePad
-10) Find the respective keybinds and change:
+10) Find the respective keybinds and change
 bind c "fire"
 bind v "void"
 bind b "aero"
@@ -62,7 +62,7 @@ These monsters include the changes for resistances. Spawn a few and test their r
 A message should display everytime a monster is spawned telling you the HP and Element of the monster.
 Attack the monster with a spell and check the resistances and weaknesses on the messages displayed
 The weapons and spells are very overpowered, mostly to showcase a change.
-You might want to use the following command for playing and testing:
+You might want to use the following command for playing and testing
 1) god (makes you invincible)
 2) give all (give you everything included all weapons)
 In game, press F1 to display the help guide.
