@@ -1144,6 +1144,14 @@ mmove_t soldier_move_death6 = {FRAME_death601, FRAME_death610, soldier_frames_de
 void soldier_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int		n;
+	//
+	//MOD5: Variables
+	//
+	int		i_rand;
+	char*	sp_names[] = { "Body Armor", "Combat Armor", "Jacket Armor", "Armor Shard", "Quad Damage", "Invulnerability", "Rebreather"};
+	gitem_t	*it;
+	edict_t	*it_ent;
+	vec3_t	death_spot;
 
 // check for gib
 	if (self->health <= self->gib_health)
@@ -1153,7 +1161,22 @@ void soldier_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int dama
 			ThrowGib (self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
 		ThrowGib (self, "models/objects/gibs/chest/tris.md2", damage, GIB_ORGANIC);
 		ThrowHead (self, "models/objects/gibs/head2/tris.md2", damage, GIB_ORGANIC);
+		VectorCopy(self->s.origin, death_spot);
 		self->deadflag = DEAD_DEAD;
+		//Spawning a random item when the body is destroyed
+		i_rand = rand() % 7; //Get a random number between max length of sp_names
+		it = FindItem(sp_names[i_rand]);
+		if (!it) 
+		{
+			return;
+		}
+		else 
+		{
+			it_ent = G_Spawn();
+			it_ent->classname = it->classname; //Assign respective classname
+			VectorCopy(death_spot, it_ent->s.origin); //Locate the item at point of origin of entity
+			SpawnItem(it_ent, it); //Spawns the item
+		}
 		return;
 	}
 
@@ -1254,6 +1277,30 @@ void SP_monster_soldier_light (edict_t *self)
 	self->s.skinnum = 0;
 	self->health = 20;
 	self->gib_health = -30;
+}
+
+//MOD4: EXTERNED SPAWN FUNCTION FOR DEMO
+extern void SP_monster_soldier_light_2(edict_t* self)
+{
+	if (deathmatch->value)
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	SP_monster_soldier_x(self);
+
+	sound_pain_light = gi.soundindex("soldier/solpain2.wav");
+	sound_death_light = gi.soundindex("soldier/soldeth2.wav");
+	gi.modelindex("models/objects/laser/tris.md2");
+	gi.soundindex("misc/lasfly.wav");
+	gi.soundindex("soldier/solatck2.wav");
+
+	self->s.skinnum = 0;
+	self->health = 200;
+	self->gib_health = -30;
+	self->classname = "soldierboy"; //MOD4: For demo purposes
+	self->element = "fire"; //MOD4: soldier element fire
 }
 
 /*QUAKED monster_soldier (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight

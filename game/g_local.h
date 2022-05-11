@@ -655,6 +655,8 @@ qboolean OnSameTeam (edict_t *ent1, edict_t *ent2);
 qboolean CanDamage (edict_t *targ, edict_t *inflictor);
 void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, int mod);
 void T_RadiusDamage (edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius, int mod);
+void C_ElementDamage_Mod (edict_t *inflictor, edict_t *targ, int *damage);
+void C_ElementDamage_NoEnt_Mod (char *spellElement, edict_t *targ, int *damage);
 
 // damage flags
 #define DAMAGE_RADIUS			0x00000001	// damage was indirect
@@ -725,14 +727,26 @@ qboolean FacingIdeal(edict_t *self);
 //
 void ThrowDebris (edict_t *self, char *modelname, float speed, vec3_t origin);
 qboolean fire_hit (edict_t *self, vec3_t aim, int damage, int kick);
+void fire_melee(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int range, int mod); //MOD1: modified function to provide range
 void fire_bullet (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int mod);
 void fire_shotgun (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int count, int mod);
+void fire_sword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod); //MOD1: function to swing sword
 void fire_blaster (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, int effect, qboolean hyper);
 void fire_grenade (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, float timer, float damage_radius);
 void fire_grenade2 (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, float timer, float damage_radius, qboolean held);
 void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius, int radius_damage);
+void fire_rocket_dark(edict_t* self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius, int radius_damage);
 void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick);
 void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius);
+void fire_katana(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_axe(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_longsword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_dagger(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_hammer(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_knife(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_spear(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_bat(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_shovel(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
 
 //
 // g_ptrail.c
@@ -862,6 +876,10 @@ typedef struct
 	int			helpchanged;
 
 	qboolean	spectator;			// client is a spectator
+
+	int			max_mp; //MOD2: added max_mp value
+	int			mp;		//MOD2: added mp value
+	int			mp_regen;
 } client_persistant_t;
 
 // client data that stays across deathmatch respawns
@@ -1109,5 +1127,11 @@ struct edict_s
 	// common data blocks
 	moveinfo_t		moveinfo;
 	monsterinfo_t	monsterinfo;
+
+	int			max_mp;//MOD2: Added max_mp to public values
+	int			mp;//MOD2: added mp to public values
+	int			mp_regen; //MOD2: Value for mp regeneration
+
+	char		*element; // MOD4: added element for entities
 };
 

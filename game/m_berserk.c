@@ -381,6 +381,11 @@ mmove_t berserk_move_death2 = {FRAME_deathc1, FRAME_deathc8, berserk_frames_deat
 void berserk_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int		n;
+	int		i_rand;
+	char* sp_names[] = { "Body Armor", "Combat Armor", "Jacket Armor", "Armor Shard", "Quad Damage", "Invulnerability", "Rebreather" };
+	gitem_t* it;
+	edict_t* it_ent;
+	vec3_t	death_spot;
 
 	if (self->health <= self->gib_health)
 	{
@@ -390,7 +395,22 @@ void berserk_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int dama
 		for (n= 0; n < 4; n++)
 			ThrowGib (self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
 		ThrowHead (self, "models/objects/gibs/head2/tris.md2", damage, GIB_ORGANIC);
+		VectorCopy(self->s.origin, death_spot);
 		self->deadflag = DEAD_DEAD;
+		//Spawning a random item when the body is destroyed
+		i_rand = rand() % 7; //Get random number between max length of sp_names
+		it = FindItem(sp_names[i_rand]);
+		if (!it)
+		{
+			return;
+		}
+		else
+		{
+			it_ent = G_Spawn();
+			it_ent->classname = it->classname; //Assign respective classname
+			VectorCopy(death_spot, it_ent->s.origin); //Locate the item at point of origin of entity
+			SpawnItem(it_ent, it); //Spawns the item
+		}
 		return;
 	}
 
@@ -454,4 +474,52 @@ void SP_monster_berserk (edict_t *self)
 	gi.linkentity (self);
 
 	walkmonster_start (self);
+}
+
+extern void SP_monster_berserk_2(edict_t* self)
+{
+	if (deathmatch->value)
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	// pre-caches
+	sound_pain = gi.soundindex("berserk/berpain2.wav");
+	sound_die = gi.soundindex("berserk/berdeth2.wav");
+	sound_idle = gi.soundindex("berserk/beridle1.wav");
+	sound_punch = gi.soundindex("berserk/attack.wav");
+	sound_search = gi.soundindex("berserk/bersrch1.wav");
+	sound_sight = gi.soundindex("berserk/sight.wav");
+
+	self->s.modelindex = gi.modelindex("models/monsters/berserk/tris.md2");
+	VectorSet(self->mins, -16, -16, -24);
+	VectorSet(self->maxs, 16, 16, 32);
+	self->movetype = MOVETYPE_STEP;
+	self->solid = SOLID_BBOX;
+
+	self->health = 240;
+	self->gib_health = -60;
+	self->mass = 250;
+
+	self->pain = berserk_pain;
+	self->die = berserk_die;
+
+	self->monsterinfo.stand = berserk_stand;
+	self->monsterinfo.walk = berserk_walk;
+	self->monsterinfo.run = berserk_run;
+	self->monsterinfo.dodge = NULL;
+	self->monsterinfo.attack = NULL;
+	self->monsterinfo.melee = berserk_melee;
+	self->monsterinfo.sight = berserk_sight;
+	self->monsterinfo.search = berserk_search;
+
+	self->monsterinfo.currentmove = &berserk_move_stand;
+	self->monsterinfo.scale = MODEL_SCALE;
+
+	self->element = "aero"; //MOD4: berserk element aero
+
+	gi.linkentity(self);
+
+	walkmonster_start(self);
 }

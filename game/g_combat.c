@@ -547,6 +547,7 @@ T_RadiusDamage
 void T_RadiusDamage (edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius, int mod)
 {
 	float	points;
+	int		i_points;
 	edict_t	*ent = NULL;
 	vec3_t	v;
 	vec3_t	dir;
@@ -568,9 +569,395 @@ void T_RadiusDamage (edict_t *inflictor, edict_t *attacker, float damage, edict_
 		{
 			if (CanDamage (ent, inflictor))
 			{
+				i_points = (int)points; //Assign i_points to calculated int casted points variable
+				//Check if target has an element
+				if (ent->element != NULL) 
+				{
+					C_ElementDamage_Mod(inflictor, ent, &i_points);//Modify damage
+				}
 				VectorSubtract (ent->s.origin, inflictor->s.origin, dir);
-				T_Damage (ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, DAMAGE_RADIUS, mod);
+				T_Damage (ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, i_points, i_points, DAMAGE_RADIUS, mod);//MOD4: original used (int)points for damage
 			}
+		}
+	}
+}
+
+/*
+============
+C_ElementDamage_Mod
+============
+*/
+void C_ElementDamage_Mod (edict_t *inflictor, edict_t *targ, int *damage) 
+{
+	
+	int		 temp_int;
+	float	 temp;
+
+	//INFLICTING ELEMENTAL DAMAGE
+	if ((Q_stricmp(inflictor->element, "fire") == 0))
+	{
+		//INFLICTING FIRE
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			temp_int = *damage;
+			temp = temp_int / 2;
+			*damage = (int)temp; //Apply half of original damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			*damage *= 2; //Apply double damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+	}
+	else if ((Q_stricmp(inflictor->element, "void") == 0))
+	{
+		//INFLICTING VOID
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			*damage *= 2; //Apply double damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			temp_int = *damage;
+			temp = temp_int / 2;
+			*damage = (int)temp; //Apply half of original damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+	}
+	else if ((Q_stricmp(inflictor->element, "aero") == 0))
+	{
+		//INFLICTING AERO
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			temp_int = *damage;
+			temp = temp_int / 2;
+			*damage = (int)temp; //Apply half of original damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			*damage *= 2; //Apply double damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			*damage = 1; //Apply normal damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+	}
+	else if ((Q_stricmp(inflictor->element, "dark") == 0))
+	{
+		//INFLICTING DARK
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage = 1;
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage *= 2; //Apply double damage
+			return;
+		}
+	}
+	else if ((Q_stricmp(inflictor->element, "light") == 0))
+	{
+		//INFLICTING LIGHT
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage *= 2;
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage = 1; //Apply double damage
+			return;
+		}
+	}
+}
+
+/*
+============
+C_ElementDamage_NoEnt_Mod
+============
+*/
+void C_ElementDamage_NoEnt_Mod (char *spellElement, edict_t *targ, int *damage)
+{
+
+	int		 temp_int;
+	float	 temp;
+
+	//INFLICTING ELEMENTAL DAMAGE
+	if ((Q_stricmp(spellElement, "fire") == 0))
+	{
+		//INFLICTING FIRE
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			temp_int = *damage;
+			temp = temp_int / 2;
+			*damage = (int)temp; //Apply half of original damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			*damage *= 2; //Apply double damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+	}
+	else if ((Q_stricmp(spellElement, "void") == 0))
+	{
+		//INFLICTING VOID
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			*damage *= 2; //Apply double damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			temp_int = *damage;
+			temp = temp_int / 2;
+			*damage = (int)temp; //Apply half of original damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+	}
+	else if ((Q_stricmp(spellElement, "aero") == 0))
+	{
+		//INFLICTING AERO
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			temp_int = *damage;
+			temp = temp_int / 2;
+			*damage = (int)temp; //Apply half of original damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			*damage *= 2; //Apply double damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			*damage = 1; //Apply normal damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage = 1; //Apply minimum damage
+			return;
+		}
+	}
+	else if ((Q_stricmp(spellElement, "dark") == 0))
+	{
+		//INFLICTING DARK
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage = 1;
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage *= 2; //Apply double damage
+			return;
+		}
+	}
+	else if ((Q_stricmp(spellElement, "light") == 0))
+	{
+		//INFLICTING LIGHT
+		//vs FIRE
+		if ((Q_stricmp(targ->element, "fire") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs VOID
+		else if ((Q_stricmp(targ->element, "void") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs AERO
+		else if ((Q_stricmp(targ->element, "aero") == 0))
+		{
+			*damage *= 1; //Apply original damage
+			return;
+		}
+		//vs DARK
+		else if ((Q_stricmp(targ->element, "dark") == 0))
+		{
+			*damage *= 2;
+			return;
+		}
+		//vs LIGHT
+		else if ((Q_stricmp(targ->element, "light") == 0))
+		{
+			*damage = 1; //Apply double damage
+			return;
 		}
 	}
 }

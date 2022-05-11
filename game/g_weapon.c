@@ -72,7 +72,7 @@ qboolean fire_hit (edict_t *self, vec3_t aim, int damage, int kick)
 	//see if enemy is in range
 	VectorSubtract (self->enemy->s.origin, self->s.origin, dir);
 	range = VectorLength(dir);
-	if (range > aim[0])
+	if (range > aim[0]) //TODO: find out how the range is provided
 		return false;
 
 	if (aim[1] > self->mins[0] && aim[1] < self->maxs[0])
@@ -123,6 +123,76 @@ qboolean fire_hit (edict_t *self, vec3_t aim, int damage, int kick)
 	return true;
 }
 
+/*
+=================
+MOD1: fire_melee
+
+Meant to be used for any weapons as long as a range for melee is provided
+Goal: implement range for calculation | Refer to already existing one
+=================
+*/
+static void fire_melee(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int range, int mod)
+{
+	trace_t		tr;
+	vec3_t		dir;
+	vec3_t		forward, right, up;
+	vec3_t		end;
+	vec3_t		water_start;
+	qboolean	water = false;
+	int			content_mask = MASK_SHOT | MASK_WATER;
+	
+
+	tr = gi.trace(self->s.origin, NULL, NULL, start, self, MASK_SHOT); //MOD1: Traces to detect collision between A and D parameters
+	if (!(tr.fraction < 1.0))
+	{
+		vectoangles(aimdir, dir); //Set dir array to point into the same direction as aimdir
+		AngleVectors(dir, forward, right, up); //Assign forward, right, and up to xyz of dir respectively
+
+		//r = crandom() * hspread; //MOD1: crandom height
+		//u = crandom() * vspread; //MOD1: crandom 
+		VectorMA(start, range, forward, end); //Sets starts + 8192 * forward into end | 8192 second argument
+		//VectorMA(end, r, right, end); //Sets: end + r * right into end
+		//VectorMA(end, u, up, end); //Sets: end + u * up into end
+
+		if (gi.pointcontents(start) & MASK_WATER)
+		{
+			water = true;
+			VectorCopy(start, water_start);
+			content_mask &= ~MASK_WATER;
+		}
+
+		tr = gi.trace(start, NULL, NULL, end, self, content_mask);
+
+		
+	}
+
+	// send gun puff / flash
+	if (!((tr.surface) && (tr.surface->flags & SURF_SKY)))
+	{
+		if (tr.fraction < 1.0)
+		{
+			if (tr.ent->takedamage)
+			{
+				T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET, mod);
+			}
+			else
+			{
+				if (strncmp(tr.surface->name, "sky", 3) != 0)
+				{
+					gi.WriteByte(svc_temp_entity);
+					gi.WriteByte(te_impact);
+					gi.WritePosition(tr.endpos);
+					gi.WriteDir(tr.plane.normal);
+					gi.multicast(tr.endpos, MULTICAST_PVS);
+
+					if (self->client)
+						PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
+				}
+			}
+		}
+	}
+
+}
 
 /*
 =================
@@ -143,17 +213,17 @@ static void fire_lead (edict_t *self, vec3_t start, vec3_t aimdir, int damage, i
 	qboolean	water = false;
 	int			content_mask = MASK_SHOT | MASK_WATER;
 
-	tr = gi.trace (self->s.origin, NULL, NULL, start, self, MASK_SHOT);
+	tr = gi.trace (self->s.origin, NULL, NULL, start, self, MASK_SHOT); //MOD1: Traces to detect collision between A and D parameters
 	if (!(tr.fraction < 1.0))
 	{
-		vectoangles (aimdir, dir);
-		AngleVectors (dir, forward, right, up);
+		vectoangles (aimdir, dir); //Set dir array to point into the same direction as aimdir
+		AngleVectors (dir, forward, right, up); //Assign forward, right, and up to xyz of dir respectively
 
-		r = crandom()*hspread;
-		u = crandom()*vspread;
-		VectorMA (start, 8192, forward, end);
-		VectorMA (end, r, right, end);
-		VectorMA (end, u, up, end);
+		r = crandom()*hspread; //MOD1: crandom height
+		u = crandom()*vspread; //MOD1: crandom 
+		VectorMA (start, 8192, forward, end); //Sets starts + 8192 * forward into end | 8192 second argument
+		VectorMA (end, r, right, end); //Sets: end + r * right into end
+		VectorMA (end, u, up, end); //Sets: end + u * up into end
 
 		if (gi.pointcontents (start) & MASK_WATER)
 		{
@@ -280,6 +350,7 @@ void fire_bullet (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int ki
 }
 
 
+
 /*
 =================
 fire_shotgun
@@ -293,6 +364,18 @@ void fire_shotgun (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int k
 
 	for (i = 0; i < count; i++)
 		fire_lead (self, start, aimdir, damage, kick, TE_SHOTGUN, hspread, vspread, mod);
+}
+
+/*
+=================
+MOD1: fire_sword
+
+Swings sword. Mean for shotgun mod replacement
+=================
+*/
+void fire_sword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
 }
 
 
@@ -359,7 +442,7 @@ void fire_blaster (edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	VectorCopy (start, bolt->s.origin);
 	VectorCopy (start, bolt->s.old_origin);
 	vectoangles (dir, bolt->s.angles);
-	VectorScale (dir, speed, bolt->velocity);
+	VectorScale (dir, 1000, bolt->velocity); //MOD1: OG VectorScale (dir, speed, bolt->velocity);
 	bolt->movetype = MOVETYPE_FLYMISSILE;
 	bolt->clipmask = MASK_SHOT;
 	bolt->solid = SOLID_BBOX;
@@ -379,7 +462,7 @@ void fire_blaster (edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	gi.linkentity (bolt);
 
 	if (self->client)
-		check_dodge (self, bolt->s.origin, dir, speed);
+		check_dodge (self, bolt->s.origin, dir, 1000); //MOD1: original check_dodge (self, bolt->s.origin, dir, speed);
 
 	tr = gi.trace (self->s.origin, NULL, NULL, bolt->s.origin, bolt, MASK_SHOT);
 	if (tr.fraction < 1.0)
@@ -570,6 +653,7 @@ void rocket_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *su
 {
 	vec3_t		origin;
 	int			n;
+	int			weapon_dmg;
 
 	if (other == ent->owner)
 		return;
@@ -585,10 +669,17 @@ void rocket_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *su
 
 	// calculate position for the explosion entity
 	VectorMA (ent->s.origin, -0.02, ent->velocity, origin);
+	weapon_dmg = ent->dmg; //MOD4: copying entity damage
 
 	if (other->takedamage)
 	{
-		T_Damage (other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, 0, MOD_ROCKET);
+		if (other->element != NULL && ent->element != NULL) {
+			C_ElementDamage_Mod(ent, other, &weapon_dmg);
+			gi.cprintf(ent->owner, PRINT_HIGH, "%s damage dealt: %d\n", ent->element, weapon_dmg);
+		}
+
+		T_Damage (other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, weapon_dmg, 0, 0, MOD_ROCKET);
+		
 	}
 	else
 	{
@@ -634,6 +725,7 @@ void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 	VectorClear (rocket->maxs);
 	rocket->s.modelindex = gi.modelindex ("models/objects/rocket/tris.md2");
 	rocket->owner = self;
+	rocket->element = "fire";
 	rocket->touch = rocket_touch;
 	rocket->nextthink = level.time + 8000/speed;
 	rocket->think = G_FreeEdict;
@@ -647,6 +739,39 @@ void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 		check_dodge (self, rocket->s.origin, dir, speed);
 
 	gi.linkentity (rocket);
+}
+
+void fire_rocket_dark (edict_t* self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)
+{
+	edict_t* rocket;
+
+	rocket = G_Spawn();
+	VectorCopy(start, rocket->s.origin);
+	VectorCopy(dir, rocket->movedir);
+	vectoangles(dir, rocket->s.angles);
+	VectorScale(dir, speed, rocket->velocity);
+	rocket->movetype = MOVETYPE_FLYMISSILE;
+	rocket->clipmask = MASK_SHOT;
+	rocket->solid = SOLID_BBOX;
+	rocket->s.effects |= EF_ROCKET;
+	VectorClear(rocket->mins);
+	VectorClear(rocket->maxs);
+	rocket->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
+	rocket->owner = self;
+	rocket->element = "dark";
+	rocket->touch = rocket_touch;
+	rocket->nextthink = level.time + 8000 / speed;
+	rocket->think = G_FreeEdict;
+	rocket->dmg = damage;
+	rocket->radius_dmg = radius_damage;
+	rocket->dmg_radius = damage_radius;
+	rocket->s.sound = gi.soundindex("weapons/rockfly.wav");
+	rocket->classname = "rocket";
+
+	if (self->client)
+		check_dodge(self, rocket->s.origin, dir, speed);
+
+	gi.linkentity(rocket);
 }
 
 
@@ -663,6 +788,8 @@ void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick
 	edict_t		*ignore;
 	int			mask;
 	qboolean	water;
+	char		*spell_element = "aero";
+	int			dmg = damage;
 
 	VectorMA (start, 8192, aimdir, end);
 	VectorCopy (start, from);
@@ -686,7 +813,16 @@ void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick
 				ignore = NULL;
 
 			if ((tr.ent != self) && (tr.ent->takedamage))
-				T_Damage (tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, 0, MOD_RAILGUN);
+			{
+				if (tr.ent->element != NULL) {
+					C_ElementDamage_NoEnt_Mod(spell_element, tr.ent, &dmg);
+					gi.cprintf(self, PRINT_HIGH, "Dealing %d %s damage\n", dmg, spell_element);
+				}
+				T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, dmg, kick, 0, MOD_RAILGUN); //MOD4: original used damage directly
+			}
+				
+				
+				
 		}
 
 		VectorCopy (tr.endpos, from);
@@ -724,6 +860,7 @@ void bfg_explode (edict_t *self)
 	float	points;
 	vec3_t	v;
 	float	dist;
+	int		i_points; //MOD4: added for elemental damage calculation
 
 	if (self->s.frame == 0)
 	{
@@ -752,7 +889,12 @@ void bfg_explode (edict_t *self)
 			gi.WriteByte (TE_BFG_EXPLOSION);
 			gi.WritePosition (ent->s.origin);
 			gi.multicast (ent->s.origin, MULTICAST_PHS);
-			T_Damage (ent, self, self->owner, self->velocity, ent->s.origin, vec3_origin, (int)points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT);
+			i_points = (int)points;
+			if (ent->element != NULL && self->element != NULL) {
+				C_ElementDamage_Mod(self, ent, &i_points); //Modify damage according to elements
+				gi.cprintf(self->owner, PRINT_HIGH, "Dealing %d %s damage\n", i_points, self->element);
+			}
+			T_Damage (ent, self, self->owner, self->velocity, ent->s.origin, vec3_origin, i_points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT); //Original used int points casted
 		}
 	}
 
@@ -764,6 +906,7 @@ void bfg_explode (edict_t *self)
 
 void bfg_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
+	int damage = 200;
 	if (other == self->owner)
 		return;
 
@@ -776,10 +919,21 @@ void bfg_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf
 	if (self->owner->client)
 		PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
 
+	
+
 	// core explosion - prevents firing it into the wall/floor
 	if (other->takedamage)
-		T_Damage (other, self, self->owner, self->velocity, self->s.origin, plane->normal, 200, 0, 0, MOD_BFG_BLAST);
-	T_RadiusDamage(self, self->owner, 200, other, 100, MOD_BFG_BLAST);
+	{
+		//MOD4: Modifying damage according to elements, not trusting pointer
+		if (other->element != NULL) {
+			C_ElementDamage_Mod(self, other, &damage);
+			gi.cprintf(self->owner, PRINT_HIGH, "Dealing %d %s damage\n", damage, self->element);
+		}
+		//MOD4: Applying modified damage
+		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, damage, 0, 0, MOD_BFG_BLAST);
+	}
+		
+	T_RadiusDamage(self, self->owner, damage, other, 100, MOD_BFG_BLAST); //Changed hard coded damag into modified value
 
 	gi.sound (self, CHAN_VOICE, gi.soundindex ("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
 	self->solid = SOLID_NOT;
@@ -847,9 +1001,19 @@ void bfg_think (edict_t *self)
 			if (!tr.ent)
 				break;
 
+
 			// hurt it if we can
 			if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->owner))
-				T_Damage (tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
+			{
+				if (tr.ent->element != NULL) {
+					C_ElementDamage_Mod(self, tr.ent, &dmg);
+					gi.cprintf(self->owner, PRINT_HIGH, "Dealing %d %s damage\n", dmg, self->element);
+				}
+				//MOD4: Element resistance and weakness damage calculation
+				T_Damage(tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
+
+			}
+				
 
 			// if we hit something that's not a monster or player we're done
 			if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client))
@@ -896,6 +1060,7 @@ void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, f
 	VectorClear (bfg->maxs);
 	bfg->s.modelindex = gi.modelindex ("sprites/s_bfg1.sp2");
 	bfg->owner = self;
+	bfg->element = "void"; //MOD4: added attribute for void spell
 	bfg->touch = bfg_touch;
 	bfg->nextthink = level.time + 8000/speed;
 	bfg->think = G_FreeEdict;
@@ -913,4 +1078,112 @@ void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, f
 		check_dodge (self, bfg->s.origin, dir, speed);
 
 	gi.linkentity (bfg);
+}
+
+/*
+=================
+MOD1: fire_katana
+
+Swings katana. Meant for blaster replacement
+=================
+*/
+void fire_katana(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_axe
+
+Swings sword. Meant for shotgun mod replacement
+=================
+*/
+void fire_axe(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_longsword
+
+Swings longsword. Meant for supershotgun
+=================
+*/
+void fire_longsword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_dagger
+
+Swings dagger. Meant for chaingun
+=================
+*/
+void fire_dagger(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_hammer
+
+Swings hammer. Meant for grenade launcher
+=================
+*/
+void fire_hammer(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_knife
+
+Swings sword. Meant for rockets
+=================
+*/
+void fire_knife(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_spear
+
+Swings spear. Meant for hyperblaster
+=================
+*/
+void fire_spear(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_bat
+
+Swings bat. Meant for railgun
+=================
+*/
+void fire_bat(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
+}
+
+/*
+=================
+MOD1: fire_shovel
+
+Swings shovel, meant for portal gun
+=================
+*/
+void fire_shovel(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+{
+	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
 }

@@ -386,6 +386,14 @@ mmove_t infantry_move_death3 = {FRAME_death301, FRAME_death309, infantry_frames_
 void infantry_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int		n;
+	//
+	//MOD5 Variables
+	//
+	int		i_rand;
+	char* sp_names[] = { "Body Armor", "Combat Armor", "Jacket Armor", "Armor Shard", "Quad Damage", "Invulnerability", "Rebreather" };
+	gitem_t* it;
+	edict_t* it_ent;
+	vec3_t	death_spot;
 
 // check for gib
 	if (self->health <= self->gib_health)
@@ -396,7 +404,21 @@ void infantry_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 		for (n= 0; n < 4; n++)
 			ThrowGib (self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
 		ThrowHead (self, "models/objects/gibs/head2/tris.md2", damage, GIB_ORGANIC);
+		VectorCopy(self->s.origin, death_spot);
 		self->deadflag = DEAD_DEAD;
+		i_rand = rand() % 7; //Get a random number between max length of sp_names
+		it = FindItem(sp_names[i_rand]);
+		if (!it)
+		{
+			return;
+		}
+		else
+		{
+			it_ent = G_Spawn();
+			it_ent->classname = it->classname; //Assign respective classname
+			VectorCopy(death_spot, it_ent->s.origin); //Locate the item at point of origin of entity
+			SpawnItem(it_ent, it); //Spawns the item
+		}
 		return;
 	}
 
@@ -604,4 +626,59 @@ void SP_monster_infantry (edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 
 	walkmonster_start (self);
+}
+
+extern void SP_monster_infantry_2(edict_t* self)
+{
+	if (deathmatch->value)
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	sound_pain1 = gi.soundindex("infantry/infpain1.wav");
+	sound_pain2 = gi.soundindex("infantry/infpain2.wav");
+	sound_die1 = gi.soundindex("infantry/infdeth1.wav");
+	sound_die2 = gi.soundindex("infantry/infdeth2.wav");
+
+	sound_gunshot = gi.soundindex("infantry/infatck1.wav");
+	sound_weapon_cock = gi.soundindex("infantry/infatck3.wav");
+	sound_punch_swing = gi.soundindex("infantry/infatck2.wav");
+	sound_punch_hit = gi.soundindex("infantry/melee2.wav");
+
+	sound_sight = gi.soundindex("infantry/infsght1.wav");
+	sound_search = gi.soundindex("infantry/infsrch1.wav");
+	sound_idle = gi.soundindex("infantry/infidle1.wav");
+
+
+	self->movetype = MOVETYPE_STEP;
+	self->solid = SOLID_BBOX;
+	self->s.modelindex = gi.modelindex("models/monsters/infantry/tris.md2");
+	VectorSet(self->mins, -16, -16, -24);
+	VectorSet(self->maxs, 16, 16, 32);
+
+	self->health = 100;
+	self->gib_health = -40;
+	self->mass = 200;
+
+	self->pain = infantry_pain;
+	self->die = infantry_die;
+
+	self->monsterinfo.stand = infantry_stand;
+	self->monsterinfo.walk = infantry_walk;
+	self->monsterinfo.run = infantry_run;
+	self->monsterinfo.dodge = infantry_dodge;
+	self->monsterinfo.attack = infantry_attack;
+	self->monsterinfo.melee = NULL;
+	self->monsterinfo.sight = infantry_sight;
+	self->monsterinfo.idle = infantry_fidget;
+
+	self->element = "dark";//MOD4: infantry element defined to dark
+
+	gi.linkentity(self);
+
+	self->monsterinfo.currentmove = &infantry_move_stand;
+	self->monsterinfo.scale = MODEL_SCALE;
+
+	walkmonster_start(self);
 }

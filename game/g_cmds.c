@@ -20,6 +20,31 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "g_local.h"
 #include "m_player.h"
 
+extern SP_monster_soldier_light_2(edict_t* self);
+extern SP_monster_berserk_2(edict_t* self);
+extern SP_monster_gunner_2(edict_t* self);
+extern SP_monster_infantry_2(edict_t* self);
+extern SP_monster_flyer_2(edict_t* self);
+/*
+==================
+MOD2
+P_ProjectSource
+
+Added to help with firing projectiles as spells
+
+==================
+*/
+static void P_ProjectSource(gclient_t* client, vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result)
+{
+	vec3_t	_distance;
+
+	VectorCopy(distance, _distance);
+	if (client->pers.hand == LEFT_HANDED)
+		_distance[1] *= -1;
+	else if (client->pers.hand == CENTER_HANDED)
+		_distance[1] = 0;
+	G_ProjectSource(point, _distance, forward, right, result);
+}
 
 char *ClientTeam (edict_t *ent)
 {
@@ -489,6 +514,7 @@ void Cmd_Inven_f (edict_t *ent)
 	gi.unicast (ent, true);
 }
 
+
 /*
 =================
 Cmd_InvUse_f
@@ -869,6 +895,329 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 	}
 }
 
+/*
+==================
+MOD2
+Cmd_Spell_Fire_f
+
+Casts fire ball
+
+argv(0) fire
+==================
+*/
+void Cmd_Spell_Fire_f(edict_t* ent)
+{
+	vec3_t	offset, start;
+	vec3_t	forward, right;
+	int		damage = 120;
+	float	damage_radius = 120;
+	int		radius_damage = 120;
+
+	if (ent->client->pers.mp >= 30) 
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Casting Fire\n");
+		AngleVectors(ent->client->v_angle, forward, right, NULL);
+
+		VectorScale(forward, -2, ent->client->kick_origin);
+		ent->client->kick_angles[0] = -1;
+
+		VectorSet(offset, 8, 8, ent->viewheight - 8);
+		P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+		fire_rocket(ent, start, forward, damage, 650, damage_radius, radius_damage);
+		ent->client->pers.mp -= 30;
+	}
+	else 
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Not enough MP\n");
+	}
+	
+	
+}
+
+/*
+==================
+MOD2
+Cmd_Spell_Void_f
+
+Casts void
+
+argv(0) void
+==================
+*/
+void Cmd_Spell_Void_f(edict_t* ent)
+{
+	if (ent->client->pers.mp >= 60) 
+	{
+		vec3_t	offset, start;
+		vec3_t	forward, right;
+		int		damage = 200;
+		float	damage_radius = 500;
+
+		gi.cprintf(ent, PRINT_HIGH, "Casting Void\n");
+		AngleVectors(ent->client->v_angle, forward, right, NULL);
+		VectorScale(forward, -2, ent->client->kick_origin);
+		VectorSet(offset, 8, 8, ent->viewheight - 8);
+		P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+		fire_bfg(ent, start, forward, damage, 500, damage_radius);
+		ent->client->pers.mp -= 60;
+	}
+	else
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Not enough MP\n");
+	}
+	
+}
+
+/*
+==================
+MOD2
+Cmd_Spell_Aero_f
+
+Casts Air Cutter
+
+argv(0) air
+==================
+*/
+void Cmd_Spell_Aero_f(edict_t* ent)
+{
+	if (ent->client->pers.mp >= 15) 
+	{
+		vec3_t		start;
+		vec3_t		forward, right;
+		vec3_t		offset;
+		int			kick = 1;
+
+		gi.cprintf(ent, PRINT_HIGH, "Casting Air Cutter\n");
+		AngleVectors(ent->client->v_angle, forward, right, NULL);
+
+		VectorScale(forward, -3, ent->client->kick_origin);
+		ent->client->kick_angles[0] = -3;
+
+		VectorSet(offset, 0, 7, ent->viewheight - 8);
+		P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+		fire_rail(ent, start, forward, 15, kick);
+		ent->client->pers.mp -= 15;
+	}
+	else
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Not enough MP\n");
+	}
+
+}
+
+/*
+==================
+MOD2
+Cmd_Spell_Dark_Blaze_f
+
+Casts Dark Blaze. Makes the enemy explode
+
+argv(0) blaze
+==================
+*/
+void Cmd_Spell_Dark_Blaze_f(edict_t* ent)
+{
+	if (ent->client->pers.mp >= 150) 
+	{
+		//
+		//PLAYER
+		//
+		vec3_t		start, forward;
+		vec3_t		end;
+		trace_t		tr;
+
+		//ENEMY
+		vec3_t		m_start, m_vec;
+		vec3_t		m_forward, m_right;
+		vec3_t		dir;
+
+		gi.cprintf(ent, PRINT_HIGH, "Dark Blaze Casted\n");
+		VectorCopy(ent->s.origin, start); //First make a copy of vector
+		start[2] += ent->viewheight; //Adds ent->viewheight to z value of start | meant to align to viewheight of player for hitscan
+		AngleVectors(ent->client->v_angle, forward, NULL, NULL); //Assignning respective x value of vector into forward
+		VectorMA(start, 8192, forward, end); //setting end to start + 8192 * forward
+		tr = gi.trace(start, NULL, NULL, end, ent, MASK_SHOT); //Tracing into entity from start to end
+		if (tr.ent && ((tr.ent->svflags & SVF_MONSTER) || tr.ent->client))
+		{
+			AngleVectors(tr.ent->s.angles, m_forward, m_right, NULL);
+			G_ProjectSource(tr.ent->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_1], m_forward, m_right, m_start);
+			VectorCopy(tr.ent->s.origin, m_vec);
+			m_vec[2] += ent->viewheight;
+			VectorSubtract(m_vec, m_start, dir);
+			VectorNormalize(dir);
+			//m_start[0] += 7;
+
+			//monster_fire_rocket(tr.ent, m_start, dir, 200, 10, MZ2_BOSS2_ROCKET_1);
+			fire_rocket_dark(ent, m_start, dir, 200, 500, 200, 200);
+			ent->client->pers.mp -= 150;
+
+		}
+
+	}
+	else 
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Not enough MP\n");
+	}
+	
+}
+
+/*
+==================
+MOD2
+Cmd_Spell_TP_f
+
+Casts Teleport. Teleport to enemy
+
+argv(0) blaze
+==================
+*/
+void Cmd_Spell_TP_f(edict_t* ent)
+{
+	//
+	//SPELL PROPERTIES
+	//
+	char *spell_element = "light";
+	int damage = 50;
+
+	//
+	//PLAYER
+	//
+	vec3_t		start, forward;
+	vec3_t		end;
+	trace_t		tr;
+
+	//
+	//ENEMY
+	//
+	vec3_t		m_start, m_vec;
+	vec3_t		m_forward, m_right;
+	vec3_t		dir;
+
+	if (ent->client->pers.mp >= 50)
+	{
+
+		VectorCopy(ent->s.origin, start); //First make a copy of vector
+		start[2] += ent->viewheight; //Adds ent->viewheight to z value of start | meant to align to viewheight of player for hitscan
+		AngleVectors(ent->client->v_angle, forward, NULL, NULL); //Assignning respective x value of vector into forward
+		VectorMA(start, 8192, forward, end); //setting end to start + 8192 * forward
+		tr = gi.trace(start, NULL, NULL, end, ent, MASK_SHOT); //Tracing into entity from start to end
+		if (tr.ent && ((tr.ent->svflags & SVF_MONSTER) || tr.ent->client))
+		{
+			//Teleport the player
+			AngleVectors(tr.ent->s.angles, m_forward, m_right, NULL);
+			G_ProjectSource(tr.ent->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_1], m_forward, m_right, m_start); //Trying to get the attacking vector of origin of monster
+			VectorCopy(tr.ent->s.origin, m_vec);
+			m_vec[2] += ent->viewheight;
+			VectorSubtract(m_vec, m_start, dir);
+			VectorNormalize(dir);
+			VectorSet(ent->s.origin, m_start[0], m_start[1], m_start[2]); //Moves player to the identified monster
+			vectoangles(dir, ent->client->v_angle); //Supposed to fix the player view to it looks at the monster when teleported
+			
+			//Calculate damage to be applied
+			if (tr.ent->element != NULL) {
+				C_ElementDamage_NoEnt_Mod(spell_element, tr.ent, &damage);
+				gi.cprintf(ent, PRINT_HIGH, "Casting Blink | Dealing %d %s damage\n", damage, spell_element);
+			}
+
+			//Do damage
+			T_Damage(tr.ent, ent, ent, forward, tr.endpos, tr.plane.normal, damage, 1, DAMAGE_ENERGY, MOD_UNKNOWN); //might crash
+
+			if (tr.ent->element != NULL) {
+				
+			}
+			ent->client->pers.mp -= 50;
+
+		}
+	}
+	else 
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Not enough MP\n");
+	}
+
+
+}
+
+/*
+==================
+Cmd_myMonster_f
+
+Spawns a light soldier in front of the player
+==================
+*/
+void Cmd_myMonster_f(edict_t* ent)
+{
+	edict_t* mons_ent;
+	vec3_t	start, forward, end;
+	char* name;
+	qboolean noMonster = false;
+
+	//Getting parameter
+	name = gi.args();
+
+	//Calculating place in front of player view
+	VectorCopy(ent->s.origin, start); //First make a copy of vector
+	start[2] += ent->viewheight; //Adds ent->viewheight to z value of start | meant to align to viewheight of player for hitscan
+	AngleVectors(ent->client->v_angle, forward, NULL, NULL); //Assignning respective x value of vector into forward
+	VectorMA(start, 90, forward, end); //setting end to start + 8192 * forward
+
+	//Deciding the monster
+	mons_ent = G_Spawn();
+	VectorCopy(end, mons_ent->s.origin);
+	if (Q_stricmp(name, "soldier") == 0) 
+	{
+		SP_monster_soldier_light_2(mons_ent);
+		gi.cprintf(ent, PRINT_HIGH, "Spawned Soldier with element ");
+		gi.cprintf(ent, PRINT_HIGH, mons_ent->element);
+		gi.cprintf(ent, PRINT_HIGH, " | HP: %d", mons_ent->health);
+		gi.cprintf(ent, PRINT_HIGH, "\n");
+	}
+	else if (Q_stricmp(name, "berserk") == 0) 
+	{
+		SP_monster_berserk_2(mons_ent);
+		gi.cprintf(ent, PRINT_HIGH, "Spawned Berserk with element ");
+		gi.cprintf(ent, PRINT_HIGH, mons_ent->element);
+		gi.cprintf(ent, PRINT_HIGH, " | HP: %d", mons_ent->health);
+		gi.cprintf(ent, PRINT_HIGH, "\n");
+	}
+	else if (Q_stricmp(name, "gunner") == 0) 
+	{
+		SP_monster_gunner_2(mons_ent);
+		gi.cprintf(ent, PRINT_HIGH, "Spawned Gunner with element ");
+		gi.cprintf(ent, PRINT_HIGH, mons_ent->element);
+		gi.cprintf(ent, PRINT_HIGH, " | HP: %d", mons_ent->health);
+		gi.cprintf(ent, PRINT_HIGH, "\n");
+	}
+	else if (Q_stricmp(name, "infantry") == 0) 
+	{
+		SP_monster_infantry_2(mons_ent);
+		gi.cprintf(ent, PRINT_HIGH, "Spawned Infantry with element ");
+		gi.cprintf(ent, PRINT_HIGH, mons_ent->element);
+		gi.cprintf(ent, PRINT_HIGH, " | HP: %d", mons_ent->health);
+		gi.cprintf(ent, PRINT_HIGH, "\n");
+	}
+	else if (Q_stricmp(name, "flyer") == 0) 
+	{
+		SP_monster_flyer_2(mons_ent);
+		gi.cprintf(ent, PRINT_HIGH, "Spawned Flyer with element ");
+		gi.cprintf(ent, PRINT_HIGH, mons_ent->element);
+		gi.cprintf(ent, PRINT_HIGH, " | HP: %d", mons_ent->health);
+		gi.cprintf(ent, PRINT_HIGH, "\n");
+	}
+	else 
+	{
+		noMonster = true;
+		gi.cprintf(ent, PRINT_HIGH, "Monster not in bank\n");
+	}
+	
+	gi.linkentity(mons_ent);
+	if (noMonster) 
+	{
+		G_FreeEdict(mons_ent);
+	}
+	
+}
+
+
 void Cmd_PlayerList_f(edict_t *ent)
 {
 	int i;
@@ -936,7 +1285,7 @@ void ClientCommand (edict_t *ent)
 	}
 	if (Q_stricmp (cmd, "help") == 0)
 	{
-		Cmd_Help_f (ent);
+		Cmd_Help_f (ent); //MOD Common: show help menu
 		return;
 	}
 
@@ -956,7 +1305,7 @@ void ClientCommand (edict_t *ent)
 	else if (Q_stricmp (cmd, "noclip") == 0)
 		Cmd_Noclip_f (ent);
 	else if (Q_stricmp (cmd, "inven") == 0)
-		Cmd_Inven_f (ent);
+		Cmd_Inven_f (ent); //OG: Cmd_Inven_f
 	else if (Q_stricmp (cmd, "invnext") == 0)
 		SelectNextItem (ent, -1);
 	else if (Q_stricmp (cmd, "invprev") == 0)
@@ -985,6 +1334,18 @@ void ClientCommand (edict_t *ent)
 		Cmd_PutAway_f (ent);
 	else if (Q_stricmp (cmd, "wave") == 0)
 		Cmd_Wave_f (ent);
+	else if (Q_stricmp (cmd, "fire") == 0)	//MOD2: Spell Fire command
+		Cmd_Spell_Fire_f (ent);
+	else if (Q_stricmp(cmd, "void") == 0)	//MOD2: Spell Void command
+		Cmd_Spell_Void_f (ent);
+	else if (Q_stricmp(cmd, "aero") == 0)	//MOD2: Spell Aero command
+		Cmd_Spell_Aero_f(ent);
+	else if (Q_stricmp(cmd, "blaze") == 0)	//MOD2: Spell Blaze command
+		Cmd_Spell_Dark_Blaze_f(ent);
+	else if (Q_stricmp(cmd, "tp") == 0)	//MOD2: Spell Blaze command
+		Cmd_Spell_TP_f(ent);
+	else if (Q_stricmp(cmd, "spawn") == 0)	//MOD4: demonstration purposes
+		Cmd_myMonster_f(ent);
 	else if (Q_stricmp(cmd, "playerlist") == 0)
 		Cmd_PlayerList_f(ent);
 	else	// anything that doesn't match a command will be a chat

@@ -335,6 +335,14 @@ mmove_t gunner_move_death = {FRAME_death01, FRAME_death11, gunner_frames_death, 
 void gunner_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int		n;
+	//
+	//MOD5: Variables
+	//
+	int		i_rand;
+	char* sp_names[] = { "Body Armor", "Combat Armor", "Jacket Armor", "Armor Shard", "Quad Damage", "Invulnerability", "Rebreather" };
+	gitem_t* it;
+	edict_t* it_ent;
+	vec3_t	death_spot;
 
 // check for gib
 	if (self->health <= self->gib_health)
@@ -345,7 +353,21 @@ void gunner_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 		for (n= 0; n < 4; n++)
 			ThrowGib (self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
 		ThrowHead (self, "models/objects/gibs/head2/tris.md2", damage, GIB_ORGANIC);
+		VectorCopy(self->s.origin, death_spot);
 		self->deadflag = DEAD_DEAD;
+		i_rand = rand() % 7; //Get a random number between max length of sp_names
+		it = FindItem(sp_names[i_rand]);
+		if (!it)
+		{
+			return;
+		}
+		else
+		{
+			it_ent = G_Spawn();
+			it_ent->classname = it->classname; //Assign respective classname
+			VectorCopy(death_spot, it_ent->s.origin); //Locate the item at point of origin of entity
+			SpawnItem(it_ent, it); //Spawns the item
+		}
 		return;
 	}
 
@@ -625,4 +647,55 @@ void SP_monster_gunner (edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 
 	walkmonster_start (self);
+}
+
+extern void SP_monster_gunner_2(edict_t* self)
+{
+	if (deathmatch->value)
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	sound_death = gi.soundindex("gunner/death1.wav");
+	sound_pain = gi.soundindex("gunner/gunpain2.wav");
+	sound_pain2 = gi.soundindex("gunner/gunpain1.wav");
+	sound_idle = gi.soundindex("gunner/gunidle1.wav");
+	sound_open = gi.soundindex("gunner/gunatck1.wav");
+	sound_search = gi.soundindex("gunner/gunsrch1.wav");
+	sound_sight = gi.soundindex("gunner/sight1.wav");
+
+	gi.soundindex("gunner/gunatck2.wav");
+	gi.soundindex("gunner/gunatck3.wav");
+
+	self->movetype = MOVETYPE_STEP;
+	self->solid = SOLID_BBOX;
+	self->s.modelindex = gi.modelindex("models/monsters/gunner/tris.md2");
+	VectorSet(self->mins, -16, -16, -24);
+	VectorSet(self->maxs, 16, 16, 32);
+
+	self->health = 175;
+	self->gib_health = -70;
+	self->mass = 200;
+
+	self->pain = gunner_pain;
+	self->die = gunner_die;
+
+	self->monsterinfo.stand = gunner_stand;
+	self->monsterinfo.walk = gunner_walk;
+	self->monsterinfo.run = gunner_run;
+	self->monsterinfo.dodge = gunner_dodge;
+	self->monsterinfo.attack = gunner_attack;
+	self->monsterinfo.melee = NULL;
+	self->monsterinfo.sight = gunner_sight;
+	self->monsterinfo.search = gunner_search;
+
+	self->element = "void"; //MOD4: gunner element void
+
+	gi.linkentity(self);
+
+	self->monsterinfo.currentmove = &gunner_move_stand;
+	self->monsterinfo.scale = MODEL_SCALE;
+
+	walkmonster_start(self);
 }
