@@ -46,15 +46,15 @@ Assuming you already own Quake 2 on Steam and that you have a GitHub account
 9) Go to your folder, find the config file and edit it with NotePad
 10) Find the respective keybinds and change:
 
-bind c "fire"
+    bind c "fire"
 
-bind v "void"
+    bind v "void"
 
-bind b "aero"
+    bind b "aero"
 
-bind n "blaze"
+    bind n "blaze"
 
-bind MOUSE2 "tp"
+    bind MOUSE2 "tp"
     
 # How to PLAY and TEST
 Go around and kill a few enemies. They should drop equipment. However, they do not have resistances.
