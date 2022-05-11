@@ -65,3 +65,4 @@ The weapons and spells are very overpowered, mostly to showcase a change.
 You might want to use the following command for playing and testing:
     1) god (makes you invincible)
     2) give all (give you everything included all weapons)
+In game, press F1 to display the help guide.
