@@ -1127,7 +1127,7 @@ void Machinegun_Fire (edict_t *ent)
 	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);		//MOD1: added
 
 	//Blaster_Fire (ent, vec3_origin, damage, false, EF_BLASTER);
-	fire_spear(ent, start, forward, damage, 0, 50, MOD_MACHINEGUN);					//MOD1: added
+	fire_drill(ent, start, forward, damage, 0, 50, MOD_MACHINEGUN);					//MOD1: added
 	ent->client->ps.gunframe++;
 }
 
@@ -1606,7 +1606,7 @@ void weapon_bfg_fire (edict_t *ent)
 	VectorSet(offset, 0, 8, ent->viewheight - 8); //Assign xyz coordinates of vectors in A position
 	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start); //Does
 
-	fire_sword(ent, start, forward, damage, kick, 50, MOD_SHOTGUN);
+	fire_shovel(ent, start, forward, damage, kick, 50, MOD_SHOTGUN);
 
 	ent->client->ps.gunframe++;
 }

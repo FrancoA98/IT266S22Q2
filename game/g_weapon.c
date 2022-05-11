@@ -1111,7 +1111,7 @@ MOD1: fire_longsword
 Swings longsword. Meant for supershotgun
 =================
 */
-void fire_longsword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
+void fire_drill(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod)
 {
 	fire_melee(self, start, aimdir, damage, kick, TE_BLOOD, range, mod);//edict_t* self, vec3_t aimdir, int damage, int kick, int range TE_BLOOD TE_SHOTGUN
 }

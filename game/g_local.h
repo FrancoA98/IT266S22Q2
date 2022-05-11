@@ -740,7 +740,7 @@ void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick
 void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius);
 void fire_katana(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
 void fire_axe(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
-void fire_longsword(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
+void fire_drill(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
 void fire_dagger(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
 void fire_hammer(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
 void fire_knife(edict_t* self, vec3_t start, vec3_t aimdir, int damage, int kick, int range, int mod);
