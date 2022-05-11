@@ -53,6 +53,8 @@ bind v "void"
 bind b "aero"
 
 bind n "blaze"
+
+bind MOUSE2 "tp"
     
 # How to PLAY and TEST
 Go around and kill a few enemies. They should drop equipment. However, they do not have resistances.
